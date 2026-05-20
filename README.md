@@ -43,7 +43,8 @@ The executor (`src/exec.mjs`) provides **process-level** defenses:
 - **Ephemeral cwd** — each run gets a fresh temp dir, deleted afterward. Input
   files have fixed, server-chosen names (no path traversal).
 - **Timeout + output cap + input cap** — `COP_TIMEOUT_MS` (8s), `COP_MAX_OUTPUT`
-  (256 KB), `COP_MAX_INPUT` (64 KB/field). Over-timeout runs are SIGKILLed.
+  (256 KB), `COP_MAX_INPUT` (64 KB/field), `COP_MAX_UPLOAD` (3 MB, docx2pdf).
+  Over-timeout runs are SIGKILLed; over-cap requests get a `413`.
 - **Per-IP rate limit** — `COP_RATE_MAX` runs/min (in-memory; single-instance).
 - **Strict CSP** on the UI; `x-content-type-options: nosniff`.
 

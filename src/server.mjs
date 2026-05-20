@@ -5,8 +5,9 @@
 
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
+import { argv } from "node:process";
 import { runCli, LIMITS } from "./exec.mjs";
 import { PLAYGROUNDS, HttpError, seedVault } from "./clis.mjs";
 
@@ -68,6 +69,12 @@ const server = createServer(async (req, res) => {
       } else {
         const raw = (await readRawBody(req, LIMITS.maxInputBytes * (pg.fields.length + 1))).toString("utf8");
         let body; try { body = JSON.parse(raw || "{}"); } catch { return send(res, 400, { error: "body must be JSON" }); }
+        // Guard against valid-but-non-object JSON (null, arrays, numbers): the
+        // field loop and every build() index into the body, so a non-object
+        // would throw a TypeError and surface as a misleading 500.
+        if (body === null || typeof body !== "object" || Array.isArray(body)) {
+          return send(res, 400, { error: "body must be a JSON object" });
+        }
         for (const f of pg.fields) {
           if (typeof body[f] === "string" && body[f].length > LIMITS.maxInputBytes) {
             return send(res, 413, { error: `field '${f}' exceeds ${LIMITS.maxInputBytes} bytes` });
@@ -86,7 +93,14 @@ const server = createServer(async (req, res) => {
   }
 });
 
-// Seed the vault explorer (best-effort) before accepting traffic.
-seedVault().finally(() => {
-  server.listen(PORT, () => console.log(`contract-ops-playground on :${PORT} (limits: ${JSON.stringify(LIMITS)})`));
-});
+export { server };
+
+// Auto-start only when run directly (`node src/server.mjs`), not when imported
+// (e.g. by tests, which start their own listener on an ephemeral port).
+const isMain = argv[1] && import.meta.url === pathToFileURL(argv[1]).href;
+if (isMain) {
+  // Seed the vault explorer (best-effort) before accepting traffic.
+  seedVault().finally(() => {
+    server.listen(PORT, () => console.log(`contract-ops-playground on :${PORT} (limits: ${JSON.stringify(LIMITS)})`));
+  });
+}
