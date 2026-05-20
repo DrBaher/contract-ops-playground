@@ -110,13 +110,45 @@ Governing law: the laws of Mars. No limitation of liability shall apply.</textar
 
 <script>
   const $ = (s, r=document) => r.querySelector(s);
-  for (const tab of document.querySelectorAll('.tab')) {
-    tab.addEventListener('click', () => {
-      const cli = tab.dataset.cli;
-      document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.cli === cli)));
-      document.querySelectorAll('.panel').forEach(p => { if (p.dataset.cli === cli) p.setAttribute('data-active',''); else p.removeAttribute('data-active'); });
+  const tabs = [...document.querySelectorAll('.tab')];
+  // Wire the WAI-ARIA tabs relationships (ids/roles derived from data-cli).
+  for (const tab of tabs) {
+    const cli = tab.dataset.cli;
+    const panel = document.querySelector('.panel[data-cli="' + CSS.escape(cli) + '"]');
+    tab.id = 'tab-' + cli;
+    tab.setAttribute('aria-controls', 'panel-' + cli);
+    tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1;
+    if (panel) {
+      panel.id = 'panel-' + cli;
+      panel.setAttribute('role', 'tabpanel');
+      panel.setAttribute('aria-labelledby', 'tab-' + cli);
+      panel.tabIndex = 0;
+    }
+  }
+  function selectTab(cli, focus) {
+    tabs.forEach(t => {
+      const on = t.dataset.cli === cli;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) t.focus();
+    });
+    document.querySelectorAll('.panel').forEach(p => {
+      if (p.dataset.cli === cli) p.setAttribute('data-active', ''); else p.removeAttribute('data-active');
     });
   }
+  for (const tab of tabs) tab.addEventListener('click', () => selectTab(tab.dataset.cli));
+  // Roving-tabindex arrow-key navigation (WAI-ARIA tabs pattern).
+  const tablist = document.querySelector('.tabs');
+  if (tablist) tablist.addEventListener('keydown', (e) => {
+    const cur = document.querySelector('.tab[aria-selected=true]');
+    const i = tabs.indexOf(cur);
+    let n = -1;
+    if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = tabs.length - 1;
+    if (n >= 0) { e.preventDefault(); selectTab(tabs[n].dataset.cli, true); }
+  });
   async function run(cli, payload, outEl, render) {
     outEl.innerHTML = '<p class="hint">Running…</p>';
     try {
