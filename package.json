@@ -1,0 +1,12 @@
+{
+  "name": "contract-ops-playground",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sandboxed in-browser playgrounds for the contract-ops CLI suite — runs each CLI on user-supplied input in a hardened, no-network, ephemeral executor.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}

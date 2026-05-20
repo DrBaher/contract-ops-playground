@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>contract-ops playground</title>
+<style>
+  :root { --cream:#fdfcf9; --ink:#1a1612; --muted:#6b6258; --green:#1f7d5d; --deep:#0c5642; --line:rgba(26,22,18,.12); --card:#fff; }
+  @media (prefers-color-scheme: dark){ :root{ --cream:#15120f; --ink:#f3efe7; --muted:#a99f93; --line:rgba(255,255,255,.14); --card:#1c1916; --green:#6cb89c; --deep:#3d9a78; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 ui-sans-serif,-apple-system,Inter,sans-serif; background:var(--cream); color:var(--ink); padding:16px; }
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tab { font:600 13px/1 ui-sans-serif; padding:8px 14px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; }
+  .tab[aria-selected=true]{ background:var(--green); color:#fff; border-color:var(--green); }
+  .panel { display:none; }
+  .panel[data-active]{ display:block; }
+  label { display:block; font-weight:600; font-size:12px; margin:10px 0 4px; color:var(--muted); }
+  textarea { width:100%; font:13px/1.5 ui-monospace,"SF Mono",Menlo,monospace; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink); resize:vertical; }
+  select, input[type=text] { font:13px ui-sans-serif; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .row{ grid-template-columns:1fr; } }
+  button.run { margin-top:12px; font:600 14px/1 ui-sans-serif; padding:10px 18px; border:0; border-radius:8px; background:var(--green); color:#fff; cursor:pointer; }
+  button.run:disabled{ opacity:.55; cursor:default; }
+  .out { margin-top:14px; }
+  .badge { display:inline-block; font:600 12px/1 ui-monospace; padding:4px 8px; border-radius:6px; }
+  .ok{ background:rgba(31,125,93,.14); color:var(--deep); }
+  .warn{ background:rgba(180,120,0,.16); color:#9a6a00; }
+  pre.result { white-space:pre-wrap; word-break:break-word; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; font:12.5px/1.5 ui-monospace,monospace; margin-top:8px; max-height:380px; overflow:auto; }
+  .hint { color:var(--muted); font-size:12px; margin:2px 0 0; }
+</style>
+</head>
+<body>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-cli="draft" aria-selected="true">draft</button>
+    <button class="tab" role="tab" data-cli="compare" aria-selected="false">compare</button>
+    <button class="tab" role="tab" data-cli="docx2pdf" aria-selected="false">docx2pdf</button>
+    <button class="tab" role="tab" data-cli="template-vault" aria-selected="false">template-vault</button>
+    <button class="tab" role="tab" data-cli="nda-review" aria-selected="false">nda-review</button>
+    <button class="tab" role="tab" data-cli="sign" aria-selected="false">sign</button>
+  </div>
+
+  <section class="panel" data-cli="draft" data-active>
+    <p class="hint">Fill placeholders in a template with your own values. Runs <code>draft --no-llm</code> in a sandbox.</p>
+    <label for="d-template">Template</label>
+    <textarea id="d-template" rows="6">## Mutual NDA
+
+This Agreement is between [Party A] and [Party B],
+effective [Effective Date].</textarea>
+    <label for="d-params">Params (JSON, optional)</label>
+    <textarea id="d-params" rows="3">{ "party_a": "Acme Corp", "party_b": "Globex", "effective_date": "2026-06-01" }</textarea>
+    <button class="run" data-cli="draft">Run draft</button>
+    <div class="out" id="d-out"></div>
+  </section>
+
+  <section class="panel" data-cli="compare">
+    <p class="hint">Clause-aware drift between two versions. Runs <code>compare base candidate --json</code>; exit 0 safe · 2 substantive · 3 cosmetic · 4 moved.</p>
+    <div class="row">
+      <div><label for="c-base">Base (what you agreed to)</label><textarea id="c-base" rows="6">## Term
+The term is two (2) years from the Effective Date.</textarea></div>
+      <div><label for="c-cand">Candidate (ready-to-sign)</label><textarea id="c-cand" rows="6">## Term
+The term is three (3) years from the Effective Date.</textarea></div>
+    </div>
+    <button class="run" data-cli="compare">Run compare</button>
+    <div class="out" id="c-out"></div>
+  </section>
+
+  <section class="panel" data-cli="docx2pdf">
+    <p class="hint">Upload a <code>.docx</code> and convert it to PDF. Runs <code>docx2pdf in.docx out.pdf</code> in a sandbox (the deploy image must include a PDF backend).</p>
+    <label for="x-file">.docx file</label>
+    <input id="x-file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="margin-top:4px" />
+    <button class="run" data-cli="docx2pdf">Convert to PDF</button>
+    <div class="out" id="x-out"></div>
+  </section>
+
+  <section class="panel" data-cli="template-vault">
+    <p class="hint">Explore a seeded demo vault (read-only). Runs <code>template-vault &lt;action&gt; --json</code> against a vault with composed NDA templates.</p>
+    <label for="v-action">Action</label>
+    <select id="v-action">
+      <option value="find">find (keyword search)</option>
+      <option value="list">list (all templates)</option>
+      <option value="info">info (one template)</option>
+      <option value="clauses">clauses (of one template)</option>
+      <option value="history">history (of one template)</option>
+      <option value="stats">stats (vault dashboard)</option>
+    </select>
+    <label for="v-arg">Query / ref — needed for find · info · clauses · history (e.g. <code>nda</code>, or <code>nda/house-startup</code>)</label>
+    <input id="v-arg" type="text" value="nda" style="width:100%;margin-top:4px" />
+    <button class="run" data-cli="template-vault">Run</button>
+    <div class="out" id="v-out"></div>
+  </section>
+
+  <section class="panel" data-cli="nda-review">
+    <p class="hint">Paste an NDA and score it against a house policy. Runs <code>nda-review-cli review --playbook … --why</code> in a sandbox. For the full draft → review → negotiate flow, see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a>.</p>
+    <label for="n-text">NDA text</label>
+    <textarea id="n-text" rows="8">Mutual NDA between Acme Corp and Globex LLC.
+
+Confidential Information means all information disclosed by either party.
+The obligations of confidentiality survive in perpetuity.
+The Receiving Party assigns all intellectual property rights to the Disclosing Party.
+Governing law: the laws of Mars. No limitation of liability shall apply.</textarea>
+    <button class="run" data-cli="nda-review">Run review</button>
+    <div class="out" id="n-out"></div>
+  </section>
+
+  <section class="panel" data-cli="sign">
+    <p class="hint">Run the offline signing demo — create → sign → verify → bundle, fully local (no provider, no network) — and download the real signed PDF it produces. For the guided walkthrough, see the <a href="https://sign-cli-demo-production.up.railway.app/web-demo/" target="_blank" rel="noopener">full demo ↗</a>.</p>
+    <button class="run" data-cli="sign">Run sign demo</button>
+    <div class="out" id="s-out"></div>
+  </section>
+
+<script>
+  const $ = (s, r=document) => r.querySelector(s);
+  for (const tab of document.querySelectorAll('.tab')) {
+    tab.addEventListener('click', () => {
+      const cli = tab.dataset.cli;
+      document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.cli === cli)));
+      document.querySelectorAll('.panel').forEach(p => { if (p.dataset.cli === cli) p.setAttribute('data-active',''); else p.removeAttribute('data-active'); });
+    });
+  }
+  async function run(cli, payload, outEl, render) {
+    outEl.innerHTML = '<p class="hint">Running…</p>';
+    try {
+      const r = await fetch('/api/run/' + cli, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload) });
+      const data = await r.json();
+      if (!r.ok) { outEl.innerHTML = '<span class="badge warn">error</span><pre class="result">'+esc(data.error||'failed')+'</pre>'; return; }
+      render(data, outEl);
+    } catch (e) { outEl.innerHTML = '<span class="badge warn">network error</span>'; }
+  }
+  function esc(s){ return String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function badge(ok, text){ return '<span class="badge '+(ok?'ok':'warn')+'">'+esc(text)+'</span>'; }
+
+  document.querySelector('button.run[data-cli=draft]').addEventListener('click', (ev) => {
+    ev.target.disabled = true;
+    run('draft', { template: $('#d-template').value, params: $('#d-params').value }, $('#d-out'), (d, el) => {
+      el.innerHTML = badge(d.ok, d.ok ? 'exit 0 — filled' : 'exit '+d.exitCode) +
+        '<pre class="result">'+esc(d.ok ? d.output : (d.stderr || d.output))+'</pre>';
+    }).finally(()=> ev.target.disabled = false);
+  });
+  document.querySelector('button.run[data-cli=compare]').addEventListener('click', (ev) => {
+    ev.target.disabled = true;
+    run('compare', { base: $('#c-base').value, candidate: $('#c-cand').value }, $('#c-out'), (d, el) => {
+      el.innerHTML = badge(d.exitCode===0, 'exit '+d.exitCode+' — '+d.meaning) +
+        '<pre class="result">'+esc(d.raw || d.stderr || '')+'</pre>';
+    }).finally(()=> ev.target.disabled = false);
+  });
+  document.querySelector('button.run[data-cli=docx2pdf]').addEventListener('click', async (ev) => {
+    const file = $('#x-file').files[0];
+    const el = $('#x-out');
+    if (!file) { el.innerHTML = badge(false, 'choose a .docx first'); return; }
+    ev.target.disabled = true; el.innerHTML = '<p class="hint">Converting… (LibreOffice can take a few seconds)</p>';
+    try {
+      const r = await fetch('/api/run/docx2pdf', { method:'POST', headers:{'content-type':'application/octet-stream'}, body: await file.arrayBuffer() });
+      const d = await r.json();
+      if (!r.ok) { el.innerHTML = badge(false,'error') + '<pre class="result">'+esc(d.error||'failed')+'</pre>'; return; }
+      if (d.ok && d.pdfBase64) {
+        el.innerHTML = badge(true, 'converted — '+d.pdfBytes+' bytes') +
+          '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="converted.pdf">Download converted.pdf</a></p>';
+      } else {
+        el.innerHTML = badge(false, 'exit '+d.exitCode) + '<pre class="result">'+esc(d.stderr || '(no PDF backend on this host — try docx2pdf --doctor)')+'</pre>';
+      }
+    } catch(e) { el.innerHTML = badge(false,'network error'); }
+    finally { ev.target.disabled = false; }
+  });
+  document.querySelector('button.run[data-cli="template-vault"]').addEventListener('click', (ev) => {
+    ev.target.disabled = true;
+    run('template-vault', { action: $('#v-action').value, arg: $('#v-arg').value }, $('#v-out'), (d, el) => {
+      el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) +
+        '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>';
+    }).finally(()=> ev.target.disabled = false);
+  });
+  document.querySelector('button.run[data-cli="nda-review"]').addEventListener('click', (ev) => {
+    ev.target.disabled = true;
+    run('nda-review', { text: $('#n-text').value }, $('#n-out'), (d, el) => {
+      el.innerHTML = badge(d.ok, d.ok ? 'reviewed' : 'exit '+d.exitCode) +
+        '<pre class="result">'+esc(d.report || d.stderr || '')+'</pre>';
+    }).finally(()=> ev.target.disabled = false);
+  });
+  document.querySelector('button.run[data-cli="sign"]').addEventListener('click', (ev) => {
+    ev.target.disabled = true;
+    run('sign', {}, $('#s-out'), (d, el) => {
+      let html = badge(d.ok, d.ok ? 'signed + verified' : 'exit '+d.exitCode);
+      const r = d.result || {};
+      if (d.ok) {
+        html += '<pre class="result">'+esc(JSON.stringify({ auditChainValid: r.auditChainValid, signatureCount: r.signatureCount, messageDigestVerified: r.messageDigestVerified }, null, 2))+'</pre>';
+        if (d.pdfBase64) html += '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="signed.pdf">Download signed.pdf ('+d.pdfBytes+' bytes)</a></p>';
+      } else {
+        html += '<pre class="result">'+esc(d.stderr || '')+'</pre>';
+      }
+      el.innerHTML = html;
+    }).finally(()=> ev.target.disabled = false);
+  });
+  // Honor ?cli=<id> so a per-tool iframe embed opens straight to that playground.
+  const wanted = new URLSearchParams(location.search).get('cli');
+  if (wanted) { const t = document.querySelector('.tab[data-cli="' + CSS.escape(wanted) + '"]'); if (t) t.click(); }
+</script>
+</body>
+</html>

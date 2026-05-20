@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "org_name": "Generic Org",
+  "clause_rules": {
+    "mutuality": {
+      "keywords": ["unilateral", "mutual", "both parties", "disclosing party", "receiving party", "vertragspartner", "überlasser", "empfänger"],
+      "preferred": "Mutual NDA preferred; avoid one-sided obligations.",
+      "red_flags": ["unilateral obligations", "only one party bound"]
+    },
+    "definition_of_confidential_information": {
+      "keywords": ["confidential information", "marked confidential", "oral disclosure", "written disclosure", "vertrauliche information", "gekennzeichnet", "mündlich", "schriftlich"],
+      "preferred": "Broad but clear definition with practical marking/confirmation rules.",
+      "red_flags": ["overly vague definition", "no objective boundary"]
+    },
+    "exceptions": {
+      "keywords": ["public domain", "already known", "independently developed", "rightfully received", "required by law", "allgemein bekannt", "bereits vorher", "unabhängig.*entwickelt", "behördlichen.*anordnung", "zwingender rechtlicher"],
+      "preferred": "Keep standard carve-outs: public, prior knowledge, independent development, third-party lawful receipt, legal compulsion.",
+      "red_flags": ["missing standard carve-outs", "narrow legal disclosure carve-out"]
+    },
+    "term_and_survival": {
+      "keywords": ["term", "survival", "(\\d+) years", "perpetual", "indefinite", "dauer", "nachwirkung", "jahre", "geschäftsgeheimnisse"],
+      "preferred": "Finite confidentiality survival (commonly 2–5 years) unless trade-secret carve-out.",
+      "red_flags": ["perpetual for all info", "unclear survival"]
+    },
+    "use_restrictions": {
+      "keywords": ["sole purpose", "evaluate", "business relationship", "purpose", "zweck", "nur.*verwenden"],
+      "preferred": "Use limited to evaluating/performing the business relationship.",
+      "red_flags": ["too broad use license", "purpose not defined"]
+    },
+    "return_or_destroy": {
+      "keywords": ["return", "destroy", "certify destruction", "retention", "zurückzugeben", "vernichten", "löschen", "backup", "archiv"],
+      "preferred": "Return/destroy on request with limited backup/legal retention carve-out.",
+      "red_flags": ["immediate purge without backup carve-out", "no return/destroy right"]
+    },
+    "residuals": {
+      "keywords": ["residual", "unaided memory", "gedächtnis"],
+      "preferred": "Avoid broad residuals clauses; if present, tightly limit scope.",
+      "red_flags": ["broad residuals rights"]
+    },
+    "non_solicit_non_compete": {
+      "keywords": ["non-solicit", "non solicit", "non-compete", "non compete", "hire", "abwerb", "wettbewerb"],
+      "preferred": "NDA should avoid hidden non-compete/non-solicit obligations unless explicitly negotiated.",
+      "red_flags": ["embedded non-compete", "overbroad non-solicit"]
+    },
+    "governing_law_jurisdiction": {
+      "keywords": ["governing law", "jurisdiction", "venue", "courts of", "österreichischem recht", "zuständige gericht", "ausschließlich"],
+      "preferred": "Prefer neutral/favorable jurisdiction; avoid hard-to-enforce foreign venues where possible.",
+      "red_flags": ["exclusive unfavorable venue"]
+    },
+    "liability_and_remedies": {
+      "keywords": ["injunctive", "equitable relief", "damages", "liability", "indemn", "haft", "gewährleistung", "istzustand"],
+      "preferred": "Allow injunctive relief but avoid unlimited liability expansion hidden in NDA.",
+      "red_flags": ["uncapped indemnity in NDA", "asymmetric remedies"]
+    },
+    "assignment_and_affiliates": {
+      "keywords": ["assignment", "affiliate", "successors", "verbundene unternehmen", "abtret"],
+      "preferred": "Assignment by consent, with affiliate sharing allowed under same obligations when needed.",
+      "red_flags": ["free assignment to unknown third parties"]
+    }
+  },
+  "negotiation_signal_patterns": {
+    "pushback": ["cannot accept", "not acceptable", "we cannot", "please revise", "redline", "counter"],
+    "acceptance": ["looks good", "agreed", "approved", "works for us", "signed"],
+    "risk": ["liability", "indemn", "unlimited", "perpetual", "injunctive", "exclusive jurisdiction"]
+  }
+}
