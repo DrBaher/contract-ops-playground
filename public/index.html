@@ -5,13 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>contract-ops playground</title>
 <style>
-  :root { --cream:#fdfcf9; --ink:#1a1612; --muted:#6b6258; --green:#1f7d5d; --deep:#0c5642; --line:rgba(26,22,18,.12); --card:#fff; }
-  @media (prefers-color-scheme: dark){ :root{ --cream:#15120f; --ink:#f3efe7; --muted:#a99f93; --line:rgba(255,255,255,.14); --card:#1c1916; --green:#6cb89c; --deep:#3d9a78; } }
+  :root { --cream:#fdfcf9; --ink:#1a1612; --muted:#6b6258; --green:#1f7d5d; --deep:#0c5642; --line:rgba(26,22,18,.12); --card:#fff; --soft:#f3efe5; }
+  @media (prefers-color-scheme: dark){ :root{ --cream:#15120f; --ink:#f3efe7; --muted:#a99f93; --line:rgba(255,255,255,.14); --card:#1c1916; --green:#6cb89c; --deep:#3d9a78; --soft:#211d19; } }
   * { box-sizing:border-box; }
-  body { margin:0; font:14px/1.5 ui-sans-serif,-apple-system,Inter,sans-serif; background:var(--cream); color:var(--ink); padding:16px; }
-  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  body { margin:0; font:14px/1.5 ui-sans-serif,-apple-system,Inter,sans-serif; background:var(--cream); color:var(--ink); padding:16px; max-width:920px; margin:0 auto; }
+  header h1 { font:700 20px/1.2 ui-serif,Georgia,serif; margin:0 0 4px; }
+  header p { color:var(--muted); margin:0 0 14px; max-width:64ch; }
+  .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
   .tab { font:600 13px/1 ui-sans-serif; padding:8px 14px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; }
   .tab[aria-selected=true]{ background:var(--green); color:#fff; border-color:var(--green); }
+  .tab.pipe[aria-selected=true]{ background:var(--deep); border-color:var(--deep); }
   .panel { display:none; }
   .panel[data-active]{ display:block; }
   label { display:block; font-weight:600; font-size:12px; margin:10px 0 4px; color:var(--muted); }
@@ -27,9 +30,28 @@
   .warn{ background:rgba(180,120,0,.16); color:#9a6a00; }
   pre.result { white-space:pre-wrap; word-break:break-word; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; font:12.5px/1.5 ui-monospace,monospace; margin-top:8px; max-height:380px; overflow:auto; }
   .hint { color:var(--muted); font-size:12px; margin:2px 0 0; }
+  .hint a, .doc a { color:var(--deep); }
+  .examples { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 2px; align-items:center; }
+  .examples b { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-right:2px; }
+  .chip { font:500 12.5px/1 ui-sans-serif; padding:6px 11px; border:1px solid var(--line); border-radius:999px; background:var(--soft); color:var(--ink); cursor:pointer; }
+  .chip:hover { border-color:var(--green); color:var(--deep); }
+  .note { font-size:12.5px; color:var(--muted); margin:8px 0 0; padding:8px 11px; border-left:3px solid var(--green); background:var(--soft); border-radius:0 6px 6px 0; }
+  .note b { color:var(--ink); }
+  .doc { font-size:12px; color:var(--muted); margin-top:10px; }
+  .pipe-step { border:1px solid var(--line); border-radius:10px; padding:13px 15px; margin:10px 0; background:var(--card); }
+  .pipe-step h3 { font:700 14px/1.3 ui-sans-serif; margin:0 0 3px; }
+  .pipe-step .n { color:var(--green); font-weight:700; }
+  .pipe-step code { font:12px ui-monospace,monospace; color:var(--deep); word-break:break-all; }
+  .pipe-step p { color:var(--muted); font-size:12.5px; margin:4px 0 0; }
+  button.step { margin-top:9px; font:600 12.5px/1 ui-sans-serif; padding:7px 13px; border:1px solid var(--green); border-radius:7px; background:transparent; color:var(--deep); cursor:pointer; }
 </style>
 </head>
 <body>
+  <header>
+    <h1>contract-ops playground</h1>
+    <p>Run the real six-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, offline signing. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
+  </header>
+
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-cli="draft" aria-selected="true">draft</button>
     <button class="tab" role="tab" data-cli="compare" aria-selected="false">compare</button>
@@ -37,43 +59,50 @@
     <button class="tab" role="tab" data-cli="template-vault" aria-selected="false">template-vault</button>
     <button class="tab" role="tab" data-cli="nda-review" aria-selected="false">nda-review</button>
     <button class="tab" role="tab" data-cli="sign" aria-selected="false">sign</button>
+    <button class="tab pipe" role="tab" data-cli="pipeline" aria-selected="false">▸ full pipeline</button>
   </div>
 
   <section class="panel" data-cli="draft" data-active>
-    <p class="hint">Fill placeholders in a template with your own values. Runs <code>draft --no-llm</code> in a sandbox.</p>
+    <p class="hint">Fill placeholders in a contract template with your own values. Runs <code>draft --no-llm</code> in a sandbox.</p>
+    <div class="examples" data-for="draft"><b>Examples</b></div>
+    <div class="note" data-note="draft"></div>
     <label for="d-template">Template</label>
-    <textarea id="d-template" rows="6">## Mutual NDA
-
-This Agreement is between [Party A] and [Party B],
-effective [Effective Date].</textarea>
-    <label for="d-params">Params (JSON, optional)</label>
-    <textarea id="d-params" rows="3">{ "party_a": "Acme Corp", "party_b": "Globex", "effective_date": "2026-06-01" }</textarea>
+    <textarea id="d-template" rows="7"></textarea>
+    <label for="d-params">Params (JSON)</label>
+    <textarea id="d-params" rows="4"></textarea>
     <button class="run" data-cli="draft">Run draft</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/draft-cli/" target="_blank" rel="noopener">draft-cli docs ↗</a></p>
     <div class="out" id="d-out"></div>
   </section>
 
   <section class="panel" data-cli="compare">
-    <p class="hint">Clause-aware drift between two versions. Runs <code>compare base candidate --json</code>; exit 0 safe · 2 substantive · 3 cosmetic · 4 moved.</p>
+    <p class="hint">Clause-aware drift between two versions. Runs <code>compare base candidate --json</code>; exit <b>0</b> clean · <b>2</b> substantive · <b>3</b> cosmetic · <b>4</b> moved.</p>
+    <div class="examples" data-for="compare"><b>Examples</b></div>
+    <div class="note" data-note="compare"></div>
     <div class="row">
-      <div><label for="c-base">Base (what you agreed to)</label><textarea id="c-base" rows="6">## Term
-The term is two (2) years from the Effective Date.</textarea></div>
-      <div><label for="c-cand">Candidate (ready-to-sign)</label><textarea id="c-cand" rows="6">## Term
-The term is three (3) years from the Effective Date.</textarea></div>
+      <div><label for="c-base">Base (what you agreed to)</label><textarea id="c-base" rows="7"></textarea></div>
+      <div><label for="c-cand">Candidate (ready-to-sign)</label><textarea id="c-cand" rows="7"></textarea></div>
     </div>
     <button class="run" data-cli="compare">Run compare</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/compare-cli/" target="_blank" rel="noopener">compare-cli docs ↗</a></p>
     <div class="out" id="c-out"></div>
   </section>
 
   <section class="panel" data-cli="docx2pdf">
-    <p class="hint">Upload a <code>.docx</code> and convert it to PDF. Runs <code>docx2pdf in.docx out.pdf</code> in a sandbox (the deploy image must include a PDF backend).</p>
-    <label for="x-file">.docx file</label>
+    <p class="hint">Convert a Word document to PDF. Runs <code>docx2pdf in.docx out.pdf</code> in a sandbox (LibreOffice backend in the image).</p>
+    <div class="examples" data-for="docx2pdf"><b>Examples</b><button class="chip" id="x-sample">Use a sample contract (.docx)</button></div>
+    <div class="note" data-note="docx2pdf"></div>
+    <label for="x-file">…or upload your own .docx</label>
     <input id="x-file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="margin-top:4px" />
     <button class="run" data-cli="docx2pdf">Convert to PDF</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/docx2pdf-cli/" target="_blank" rel="noopener">docx2pdf-cli docs ↗</a></p>
     <div class="out" id="x-out"></div>
   </section>
 
   <section class="panel" data-cli="template-vault">
-    <p class="hint">Explore a seeded demo vault (read-only). Runs <code>template-vault &lt;action&gt; --json</code> against a vault with composed NDA templates.</p>
+    <p class="hint">Explore a seeded demo vault (read-only): public sources + house NDA templates, clause provenance, version history. Runs <code>template-vault &lt;action&gt; --json</code>.</p>
+    <div class="examples" data-for="template-vault"><b>Examples</b></div>
+    <div class="note" data-note="template-vault"></div>
     <label for="v-action">Action</label>
     <select id="v-action">
       <option value="find">find (keyword search)</option>
@@ -83,72 +112,173 @@ The term is three (3) years from the Effective Date.</textarea></div>
       <option value="history">history (of one template)</option>
       <option value="stats">stats (vault dashboard)</option>
     </select>
-    <label for="v-arg">Query / ref — needed for find · info · clauses · history (e.g. <code>nda</code>, or <code>nda/house-startup</code>)</label>
+    <label for="v-arg">Query / ref — needed for find · info · clauses · history (e.g. <code>nda</code>, or <code>nda/house</code>)</label>
     <input id="v-arg" type="text" value="nda" style="width:100%;margin-top:4px" />
     <button class="run" data-cli="template-vault">Run</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/template-vault-cli/" target="_blank" rel="noopener">template-vault-cli docs ↗</a></p>
     <div class="out" id="v-out"></div>
   </section>
 
   <section class="panel" data-cli="nda-review">
-    <p class="hint">Paste an NDA and score it against a house policy. Runs <code>nda-review-cli review --playbook … --why</code> in a sandbox. For the full draft → review → negotiate flow, see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a>.</p>
+    <p class="hint">Score an NDA against a house playbook. Runs <code>nda-review-cli review --playbook … --why</code> in a sandbox.</p>
+    <div class="examples" data-for="nda-review"><b>Examples</b></div>
+    <div class="note" data-note="nda-review"></div>
     <label for="n-text">NDA text</label>
-    <textarea id="n-text" rows="8">Mutual NDA between Acme Corp and Globex LLC.
-
-Confidential Information means all information disclosed by either party.
-The obligations of confidentiality survive in perpetuity.
-The Receiving Party assigns all intellectual property rights to the Disclosing Party.
-Governing law: the laws of Mars. No limitation of liability shall apply.</textarea>
+    <textarea id="n-text" rows="9"></textarea>
     <button class="run" data-cli="nda-review">Run review</button>
+    <p class="doc">The sandbox runs the <b>deterministic</b> engine (no network): it returns the scoring verdict + risk breakdown vs the house playbook. Semantic red-flag <i>findings</i> light up with the opt-in LLM tier — see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a> for the LLM-adjudicated draft → review → negotiate flow, or the <a href="https://cli.drbaher.com/tools/nda-review-cli/" target="_blank" rel="noopener">docs ↗</a>.</p>
     <div class="out" id="n-out"></div>
   </section>
 
   <section class="panel" data-cli="sign">
-    <p class="hint">Run the offline signing demo — create → sign → verify → bundle, fully local (no provider, no network) — and download the real signed PDF it produces. For the guided walkthrough, see the <a href="https://sign-cli-demo-production.up.railway.app/web-demo/" target="_blank" rel="noopener">full demo ↗</a>.</p>
+    <p class="hint">Run the offline signing demo — create → sign → verify → bundle, fully local (no provider, no network) — and download the real signed PDF it produces.</p>
+    <div class="note" data-note="sign"></div>
     <button class="run" data-cli="sign">Run sign demo</button>
+    <p class="doc">Learn more: <a href="https://sign-cli-demo-production.up.railway.app/web-demo/" target="_blank" rel="noopener">full guided demo ↗</a> · <a href="https://cli.drbaher.com/tools/sign-cli/" target="_blank" rel="noopener">sign-cli docs ↗</a></p>
     <div class="out" id="s-out"></div>
+  </section>
+
+  <section class="panel" data-cli="pipeline">
+    <p class="hint">Watch one deal — <b>Acme Corp ↔ Vendor LLC, mutual NDA</b> — move through the whole suite. Run each step (each executes in its own sandbox; the data is the same deal at every stage).</p>
+    <button class="run" id="pipe-all" style="margin:6px 0 4px">▸ Run all steps</button>
+    <div id="pipe-steps"></div>
   </section>
 
 <script>
   const $ = (s, r=document) => r.querySelector(s);
+  function esc(s){ return String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function badge(ok, text){ return '<span class="badge '+(ok?'ok':'warn')+'">'+esc(text)+'</span>'; }
+
+  // ---- Realistic example corpus (sourced from the suite's own fixtures) ----
+  const NDA_MUTUAL = `# Mutual Non-Disclosure Agreement
+
+This Mutual NDA is between [Party A] and [Party B], effective [Effective Date], for the purpose of [Purpose].
+
+Confidential Information is protected for [Term] from the Effective Date. This Agreement is governed by the laws of [Governing Law].`;
+  const NDA_ONESIDED = `ONE-WAY NON-DISCLOSURE AGREEMENT
+
+Only the Receiving Party is bound by confidentiality; the Disclosing Party has no obligations.
+Confidential Information means any and all information, whether or not marked confidential.
+Confidentiality obligations are perpetual and survive indefinitely.
+The Receiving Party provides uncapped indemnity and unlimited liability.
+Exclusive jurisdiction in a foreign venue. The Receiving Party shall not compete for five years.`;
+  const NDA_BALANCED = `# House Mutual NDA
+
+## Purpose
+The parties wish to evaluate a potential business relationship.
+
+## Term and Survival
+This agreement terminates two (2) years after the Effective Date. Confidentiality obligations survive for three (3) years thereafter.
+
+## Confidentiality
+Each party will protect the other's Confidential Information with reasonable care. Standard carve-outs apply: public domain, prior knowledge, independent development, lawful third-party receipt, and disclosure required by law.`;
+
+  const EX = {
+    draft: [
+      { name: "Mutual NDA", note: "Fills five bracketed placeholders ([Party A], [Term], …) in a mutual NDA cover.",
+        set: { "d-template": NDA_MUTUAL,
+               "d-params": '{\n  "party_a": "Acme Corp",\n  "party_b": "Vendor LLC",\n  "effective_date": "2026-06-01",\n  "purpose": "evaluating a partnership",\n  "term": "two (2) years",\n  "governing_law": "Delaware"\n}' } },
+      { name: "Vendor MSA", note: "A master services agreement — different placeholders, same deterministic fill.",
+        set: { "d-template": `# Master Services Agreement
+
+This MSA is between [Client] and [Vendor], effective [Effective Date].
+
+[Vendor] will provide [Services] for a fee of [Fee], payable [Payment Terms]. Either party may terminate on [Notice] written notice.`,
+               "d-params": '{\n  "client": "Acme Corp",\n  "vendor": "Globex Consulting",\n  "effective_date": "2026-07-01",\n  "services": "cloud migration advisory",\n  "fee": "$25,000/month",\n  "payment_terms": "net-30",\n  "notice": "30 days"\n}' } },
+      { name: "Employment IP assignment", note: "Shows brackets that aren't party names resolve just as well.",
+        set: { "d-template": `# Proprietary Information & Inventions Agreement
+
+[Employee] joins [Company] on [Start Date] in the role of [Role].
+
+[Employee] assigns to [Company] all intellectual property created within the scope of employment. This Agreement is governed by the laws of [Governing Law].`,
+               "d-params": '{\n  "employee": "Jordan Lee",\n  "company": "Acme Corp",\n  "start_date": "2026-08-15",\n  "role": "Senior Engineer",\n  "governing_law": "California"\n}' } },
+    ],
+    compare: [
+      { name: "Term silently changed (2→3 yrs)", note: "<b>Expect exit 2 — substantive.</b> The classic 'did the term quietly change in the round trip?' gate.",
+        set: { "c-base": `## Term and Survival\n\nThis agreement terminates two (2) years after the Effective Date.\nConfidentiality obligations survive for three (3) years thereafter.`,
+               "c-cand": `## Term and Survival\n\nThis agreement terminates three (3) years after the Effective Date.\nConfidentiality obligations survive for three (3) years thereafter.` } },
+      { name: "Governing law swapped", note: "<b>Expect exit 2 — substantive.</b> Delaware → Cayman Islands is a material change.",
+        set: { "c-base": `## Governing Law\n\nThis Agreement is governed by the laws of Delaware.`,
+               "c-cand": `## Governing Law\n\nThis Agreement is governed by the laws of the Cayman Islands.` } },
+      { name: "No drift — identical", note: "<b>Expect exit 0 — clean.</b> The green 'safe to sign' case.",
+        set: { "c-base": `## Confidentiality\n\nEach party will protect the other's Confidential Information with reasonable care.`,
+               "c-cand": `## Confidentiality\n\nEach party will protect the other's Confidential Information with reasonable care.` } },
+    ],
+    "nda-review": [
+      { name: "Balanced mutual NDA", note: "A reasonable mutual NDA with standard carve-outs — low risk score.",
+        set: { "n-text": NDA_BALANCED } },
+      { name: "One-sided / aggressive", note: "Unilateral, perpetual, uncapped, hidden non-compete. The deterministic engine returns the structural verdict; the LLM tier flags each red flag (see the note below).",
+        set: { "n-text": NDA_ONESIDED } },
+      { name: "Vendor NDA", note: "A typical inbound vendor NDA to score against your house position.",
+        set: { "n-text": `MUTUAL NON-DISCLOSURE AGREEMENT between Acme Corp and Globex Consulting.
+
+Confidential Information means information disclosed and marked confidential, or that should reasonably be understood to be confidential.
+Term: confidentiality survives three (3) years from disclosure.
+Use is limited to the sole purpose of evaluating the business relationship.
+Either party may seek injunctive relief. Governing law: Delaware.` } },
+    ],
+    "template-vault": [
+      { name: "Search 'confidentiality'", note: "Keyword search across the vault.", set: { "v-action": "find", "v-arg": "confidentiality" } },
+      { name: "List all templates", note: "Everything in the seeded vault.", set: { "v-action": "list", "v-arg": "" } },
+      { name: "Inspect house NDA", note: "Metadata + provenance for one template.", set: { "v-action": "info", "v-arg": "nda/house" } },
+      { name: "Clause provenance", note: "Which clause came from where (the composable-clause model).", set: { "v-action": "clauses", "v-arg": "nda/house" } },
+      { name: "Version history", note: "The version trail of a template.", set: { "v-action": "history", "v-arg": "nda/house-startup" } },
+      { name: "Vault dashboard", note: "Counts + health across the vault.", set: { "v-action": "stats", "v-arg": "" } },
+    ],
+    docx2pdf: [],
+    sign: [],
+  };
+  const NOTES = {
+    docx2pdf: "Click <b>Use a sample contract</b> to convert a bundled .docx, or upload your own. LibreOffice renders it to a real PDF you can download.",
+    sign: "No input needed — this runs the full offline lifecycle (create → send → sign → verify → export) with the built-in PAdES signer and returns the signed PDF + audit result.",
+  };
+
+  function showNote(cli, html){ const n = document.querySelector('.note[data-note="'+cli+'"]'); if (n){ n.innerHTML = html || ''; n.style.display = html ? 'block' : 'none'; } }
+  function loadExample(cli, i){
+    const ex = EX[cli][i];
+    for (const [id, val] of Object.entries(ex.set)) { const el = document.getElementById(id); if (el) el.value = val; }
+    showNote(cli, ex.note);
+  }
+  // Build the example chips + load the first example for each tab.
+  for (const cli of Object.keys(EX)) {
+    const host = document.querySelector('.examples[data-for="'+cli+'"]');
+    if (host && EX[cli].length) {
+      EX[cli].forEach((ex, i) => {
+        const b = document.createElement('button'); b.className = 'chip'; b.textContent = ex.name;
+        b.addEventListener('click', () => loadExample(cli, i));
+        host.appendChild(b);
+      });
+      loadExample(cli, 0);
+    }
+  }
+  showNote('docx2pdf', NOTES.docx2pdf);
+  showNote('sign', NOTES.sign);
+
+  // ---- Tabs (WAI-ARIA) ----
   const tabs = [...document.querySelectorAll('.tab')];
-  // Wire the WAI-ARIA tabs relationships (ids/roles derived from data-cli).
   for (const tab of tabs) {
     const cli = tab.dataset.cli;
     const panel = document.querySelector('.panel[data-cli="' + CSS.escape(cli) + '"]');
     tab.id = 'tab-' + cli;
     tab.setAttribute('aria-controls', 'panel-' + cli);
     tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1;
-    if (panel) {
-      panel.id = 'panel-' + cli;
-      panel.setAttribute('role', 'tabpanel');
-      panel.setAttribute('aria-labelledby', 'tab-' + cli);
-      panel.tabIndex = 0;
-    }
+    if (panel) { panel.id = 'panel-' + cli; panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', 'tab-' + cli); panel.tabIndex = 0; }
   }
   function selectTab(cli, focus) {
-    tabs.forEach(t => {
-      const on = t.dataset.cli === cli;
-      t.setAttribute('aria-selected', String(on));
-      t.tabIndex = on ? 0 : -1;
-      if (on && focus) t.focus();
-    });
-    document.querySelectorAll('.panel').forEach(p => {
-      if (p.dataset.cli === cli) p.setAttribute('data-active', ''); else p.removeAttribute('data-active');
-    });
+    tabs.forEach(t => { const on = t.dataset.cli === cli; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    document.querySelectorAll('.panel').forEach(p => { if (p.dataset.cli === cli) p.setAttribute('data-active', ''); else p.removeAttribute('data-active'); });
   }
   for (const tab of tabs) tab.addEventListener('click', () => selectTab(tab.dataset.cli));
-  // Roving-tabindex arrow-key navigation (WAI-ARIA tabs pattern).
   const tablist = document.querySelector('.tabs');
   if (tablist) tablist.addEventListener('keydown', (e) => {
-    const cur = document.querySelector('.tab[aria-selected=true]');
-    const i = tabs.indexOf(cur);
-    let n = -1;
+    const cur = document.querySelector('.tab[aria-selected=true]'); const i = tabs.indexOf(cur); let n = -1;
     if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
     else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
-    else if (e.key === 'Home') n = 0;
-    else if (e.key === 'End') n = tabs.length - 1;
+    else if (e.key === 'Home') n = 0; else if (e.key === 'End') n = tabs.length - 1;
     if (n >= 0) { e.preventDefault(); selectTab(tabs[n].dataset.cli, true); }
   });
+
+  // ---- Runner ----
   async function run(cli, payload, outEl, render) {
     outEl.innerHTML = '<p class="hint">Running…</p>';
     try {
@@ -158,70 +288,85 @@ Governing law: the laws of Mars. No limitation of liability shall apply.</textar
       render(data, outEl);
     } catch (e) { outEl.innerHTML = '<span class="badge warn">network error</span>'; }
   }
-  function esc(s){ return String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-  function badge(ok, text){ return '<span class="badge '+(ok?'ok':'warn')+'">'+esc(text)+'</span>'; }
+  const RENDER = {
+    draft: (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'exit 0 — filled' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? d.output : (d.stderr || d.output))+'</pre>'; },
+    compare: (d, el) => { el.innerHTML = badge(d.exitCode===0, 'exit '+d.exitCode+' — '+d.meaning) + '<pre class="result">'+esc(d.raw || d.stderr || '')+'</pre>'; },
+    "template-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
+    "nda-review": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'reviewed' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.report || d.stderr || '')+'</pre>'; },
+    sign: (d, el) => {
+      let html = badge(d.ok, d.ok ? 'signed + verified' : 'exit '+d.exitCode); const r = d.result || {};
+      if (d.ok) { html += '<pre class="result">'+esc(JSON.stringify({ auditChainValid: r.auditChainValid, signatureCount: r.signatureCount, messageDigestVerified: r.messageDigestVerified }, null, 2))+'</pre>';
+        if (d.pdfBase64) html += '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="signed.pdf">Download signed.pdf ('+d.pdfBytes+' bytes)</a></p>'; }
+      else { html += '<pre class="result">'+esc(d.stderr || '')+'</pre>'; }
+      el.innerHTML = html;
+    },
+  };
+  function payloadFor(cli) {
+    if (cli === 'draft') return { template: $('#d-template').value, params: $('#d-params').value };
+    if (cli === 'compare') return { base: $('#c-base').value, candidate: $('#c-cand').value };
+    if (cli === 'template-vault') return { action: $('#v-action').value, arg: $('#v-arg').value };
+    if (cli === 'nda-review') return { text: $('#n-text').value };
+    if (cli === 'sign') return {};
+    return {};
+  }
+  const OUT = { draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out' };
+  for (const cli of Object.keys(OUT)) {
+    const btn = document.querySelector('button.run[data-cli="'+cli+'"]'); if (!btn) continue;
+    btn.addEventListener('click', (ev) => { ev.target.disabled = true; run(cli, payloadFor(cli), $(OUT[cli]), RENDER[cli]).finally(()=> ev.target.disabled = false); });
+  }
 
-  document.querySelector('button.run[data-cli=draft]').addEventListener('click', (ev) => {
-    ev.target.disabled = true;
-    run('draft', { template: $('#d-template').value, params: $('#d-params').value }, $('#d-out'), (d, el) => {
-      el.innerHTML = badge(d.ok, d.ok ? 'exit 0 — filled' : 'exit '+d.exitCode) +
-        '<pre class="result">'+esc(d.ok ? d.output : (d.stderr || d.output))+'</pre>';
-    }).finally(()=> ev.target.disabled = false);
-  });
-  document.querySelector('button.run[data-cli=compare]').addEventListener('click', (ev) => {
-    ev.target.disabled = true;
-    run('compare', { base: $('#c-base').value, candidate: $('#c-cand').value }, $('#c-out'), (d, el) => {
-      el.innerHTML = badge(d.exitCode===0, 'exit '+d.exitCode+' — '+d.meaning) +
-        '<pre class="result">'+esc(d.raw || d.stderr || '')+'</pre>';
-    }).finally(()=> ev.target.disabled = false);
-  });
-  document.querySelector('button.run[data-cli=docx2pdf]').addEventListener('click', async (ev) => {
-    const file = $('#x-file').files[0];
-    const el = $('#x-out');
-    if (!file) { el.innerHTML = badge(false, 'choose a .docx first'); return; }
-    ev.target.disabled = true; el.innerHTML = '<p class="hint">Converting… (LibreOffice can take a few seconds)</p>';
+  // ---- docx2pdf (upload or bundled sample) ----
+  async function convertDocx(getBuf, el, btn) {
+    btn.disabled = true; el.innerHTML = '<p class="hint">Converting… (LibreOffice can take a few seconds)</p>';
     try {
-      const r = await fetch('/api/run/docx2pdf', { method:'POST', headers:{'content-type':'application/octet-stream'}, body: await file.arrayBuffer() });
+      const buf = await getBuf();
+      const r = await fetch('/api/run/docx2pdf', { method:'POST', headers:{'content-type':'application/octet-stream'}, body: buf });
       const d = await r.json();
       if (!r.ok) { el.innerHTML = badge(false,'error') + '<pre class="result">'+esc(d.error||'failed')+'</pre>'; return; }
-      if (d.ok && d.pdfBase64) {
-        el.innerHTML = badge(true, 'converted — '+d.pdfBytes+' bytes') +
-          '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="converted.pdf">Download converted.pdf</a></p>';
-      } else {
-        el.innerHTML = badge(false, 'exit '+d.exitCode) + '<pre class="result">'+esc(d.stderr || '(no PDF backend on this host — try docx2pdf --doctor)')+'</pre>';
-      }
+      if (d.ok && d.pdfBase64) el.innerHTML = badge(true, 'converted — '+d.pdfBytes+' bytes') + '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="converted.pdf">Download converted.pdf</a></p>';
+      else el.innerHTML = badge(false, 'exit '+d.exitCode) + '<pre class="result">'+esc(d.stderr || '(no PDF backend on this host)')+'</pre>';
     } catch(e) { el.innerHTML = badge(false,'network error'); }
-    finally { ev.target.disabled = false; }
+    finally { btn.disabled = false; }
+  }
+  $('button.run[data-cli=docx2pdf]').addEventListener('click', (ev) => {
+    const file = $('#x-file').files[0]; const el = $('#x-out');
+    if (!file) { el.innerHTML = badge(false, 'choose a .docx or use the sample'); return; }
+    convertDocx(() => file.arrayBuffer(), el, ev.target);
   });
-  document.querySelector('button.run[data-cli="template-vault"]').addEventListener('click', (ev) => {
+  $('#x-sample').addEventListener('click', (ev) => {
+    convertDocx(async () => { const r = await fetch('/sample.docx'); return r.arrayBuffer(); }, $('#x-out'), ev.target);
+  });
+
+  // ---- Guided pipeline ----
+  const PIPELINE = [
+    { cli:'template-vault', n:1, title:'Store & version', cmd:'template-vault info nda/house --json', why:'Pull the versioned house NDA template from the vault.', payload:{ action:'info', arg:'nda/house' } },
+    { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"2026-06-01","purpose":"evaluating a partnership","term":"two (2) years","governing_law":"Delaware"}' } },
+    { cli:'nda-review', n:3, title:'Review', cmd:'nda-review-cli review --file nda.md --playbook house.json --why', why:'Score the draft against the house playbook before sending.', payload:{ text: NDA_BALANCED } },
+    { cli:'compare', n:4, title:'Drift gate', cmd:'compare agreed.md ready-to-sign.md --json', why:'Catch any change between what was agreed and what came back to sign.', payload:{ base:'## Term and Survival\n\nThis agreement terminates two (2) years after the Effective Date.', candidate:'## Term and Survival\n\nThis agreement terminates three (3) years after the Effective Date.' } },
+    { cli:'docx2pdf', n:5, title:'Render', cmd:'docx2pdf agreed.docx agreed.pdf', why:'Convert the agreed document to a PDF for signing.', sample:true },
+    { cli:'sign', n:6, title:'Sign', cmd:'sign document agreed.pdf --signer "Alice" --auto-place first', why:'Seal it offline with a verifiable PAdES signature + audit chain.', payload:{} },
+  ];
+  const pipeHost = $('#pipe-steps');
+  PIPELINE.forEach((s, idx) => {
+    const div = document.createElement('div'); div.className = 'pipe-step';
+    div.innerHTML = '<h3><span class="n">'+s.n+'.</span> '+esc(s.title)+' — <code>'+esc(s.cli)+'</code></h3>'
+      + '<p>'+esc(s.why)+'</p><p><code>'+esc(s.cmd)+'</code></p>'
+      + '<button class="step" data-i="'+idx+'">Run this step</button><div class="out" id="pipe-out-'+idx+'"></div>';
+    pipeHost.appendChild(div);
+  });
+  async function runStep(idx) {
+    const s = PIPELINE[idx]; const el = $('#pipe-out-'+idx);
+    if (s.cli === 'docx2pdf') { await convertDocx(async () => { const r = await fetch('/sample.docx'); return r.arrayBuffer(); }, el, { disabled:false, set disabled(v){} }); return; }
+    await run(s.cli, s.payload, el, RENDER[s.cli]);
+  }
+  pipeHost.querySelectorAll('button.step').forEach(b => b.addEventListener('click', (ev) => { ev.target.disabled = true; runStep(Number(ev.target.dataset.i)).finally(()=> ev.target.disabled = false); }));
+  $('#pipe-all').addEventListener('click', async (ev) => {
     ev.target.disabled = true;
-    run('template-vault', { action: $('#v-action').value, arg: $('#v-arg').value }, $('#v-out'), (d, el) => {
-      el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) +
-        '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>';
-    }).finally(()=> ev.target.disabled = false);
+    for (let i = 0; i < PIPELINE.length; i++) { await runStep(i); }
+    ev.target.disabled = false;
   });
-  document.querySelector('button.run[data-cli="nda-review"]').addEventListener('click', (ev) => {
-    ev.target.disabled = true;
-    run('nda-review', { text: $('#n-text').value }, $('#n-out'), (d, el) => {
-      el.innerHTML = badge(d.ok, d.ok ? 'reviewed' : 'exit '+d.exitCode) +
-        '<pre class="result">'+esc(d.report || d.stderr || '')+'</pre>';
-    }).finally(()=> ev.target.disabled = false);
-  });
-  document.querySelector('button.run[data-cli="sign"]').addEventListener('click', (ev) => {
-    ev.target.disabled = true;
-    run('sign', {}, $('#s-out'), (d, el) => {
-      let html = badge(d.ok, d.ok ? 'signed + verified' : 'exit '+d.exitCode);
-      const r = d.result || {};
-      if (d.ok) {
-        html += '<pre class="result">'+esc(JSON.stringify({ auditChainValid: r.auditChainValid, signatureCount: r.signatureCount, messageDigestVerified: r.messageDigestVerified }, null, 2))+'</pre>';
-        if (d.pdfBase64) html += '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="signed.pdf">Download signed.pdf ('+d.pdfBytes+' bytes)</a></p>';
-      } else {
-        html += '<pre class="result">'+esc(d.stderr || '')+'</pre>';
-      }
-      el.innerHTML = html;
-    }).finally(()=> ev.target.disabled = false);
-  });
-  // Honor ?cli=<id> so a per-tool iframe embed opens straight to that playground.
+
+  // Deep-link: ?cli=<id> opens straight to that tab.
   const wanted = new URLSearchParams(location.search).get('cli');
   if (wanted) { const t = document.querySelector('.tab[data-cli="' + CSS.escape(wanted) + '"]'); if (t) t.click(); }
 </script>

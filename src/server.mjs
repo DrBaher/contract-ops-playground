@@ -51,6 +51,10 @@ const server = createServer(async (req, res) => {
       const html = await readFile(join(ROOT, "public", "index.html"), "utf8");
       return send(res, 200, html, { "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'" });
     }
+    if (req.method === "GET" && url.pathname === "/sample.docx") {
+      const buf = await readFile(join(ROOT, "public", "sample.docx"));
+      return send(res, 200, buf, { "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    }
     if (req.method === "GET" && url.pathname === "/api/meta") {
       return send(res, 200, { clis: Object.keys(PLAYGROUNDS), limits: LIMITS });
     }
