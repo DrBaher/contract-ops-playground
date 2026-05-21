@@ -49,7 +49,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/healthz") return send(res, 200, { ok: true });
     if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
       const html = await readFile(join(ROOT, "public", "index.html"), "utf8");
-      return send(res, 200, html, { "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'" });
+      return send(res, 200, html, { "content-security-policy": "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'; connect-src 'self'" });
     }
     if (req.method === "GET" && url.pathname === "/sample.docx") {
       const buf = await readFile(join(ROOT, "public", "sample.docx"));
