@@ -8,7 +8,8 @@
 import { execFile } from "node:child_process";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 function cmd(id, fallback) {
   const v = process.env[`COP_${id}_CMD`];
@@ -27,6 +28,14 @@ export const BIN = {
 // nda-review's `review` needs a policy file; bundle the suite default in the image.
 export const NDA_POLICY = process.env.COP_NDA_POLICY || "/app/assets/nda-policy.json";
 
+// Bundled templates uploaded into the demo vault at seed time so the explorer
+// spans multiple categories (msa, employment), not just the demo's NDAs.
+const ASSETS = process.env.COP_ASSETS_DIR || join(dirname(dirname(fileURLToPath(import.meta.url))), "assets");
+const EXTRA_VAULT_TEMPLATES = [
+  { category: "msa", name: "standard", summary: "Master Services Agreement — bracketed template", tags: "services,vendor", file: join(ASSETS, "vault", "msa.md") },
+  { category: "employment", name: "ip-assignment", summary: "Proprietary Information & Inventions Agreement", tags: "employment,ip", file: join(ASSETS, "vault", "ip-assignment.md") },
+];
+
 // The vault explorer runs read-only commands against a demo vault seeded once
 // at startup (via `template-vault demo`). Read-only commands don't mutate it,
 // so the seeded dir is shared safely across requests.
@@ -39,6 +48,12 @@ export async function seedVault() {
     await new Promise((resolve, reject) => {
       execFile(c, [...base, "demo", "--clean", "--path", dir], { timeout: 30000, env: { ...process.env, NO_COLOR: "1" } }, (err) => err ? reject(err) : resolve());
     });
+    // Best-effort: add bundled cross-category templates so the explorer isn't NDA-only.
+    for (const t of EXTRA_VAULT_TEMPLATES) {
+      await new Promise((resolve) => {
+        execFile(c, [...base, "upload", "--category", t.category, "--name", t.name, "--version", "1.0", "--summary", t.summary, "--tags", t.tags, "--license", "example", "--non-interactive", t.file], { cwd: dir, timeout: 20000, env: { ...process.env, NO_COLOR: "1" } }, () => resolve());
+      });
+    }
     SEED_VAULT = dir;
     console.log("vault explorer seeded at", dir);
     return dir;

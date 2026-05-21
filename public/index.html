@@ -67,7 +67,7 @@
     <div class="examples" data-for="draft"><b>Examples</b></div>
     <div class="note" data-note="draft"></div>
     <label for="d-template">Template</label>
-    <textarea id="d-template" rows="7"></textarea>
+    <textarea id="d-template" rows="16"></textarea>
     <label for="d-params">Params (JSON)</label>
     <textarea id="d-params" rows="4"></textarea>
     <button class="run" data-cli="draft">Run draft</button>
@@ -152,9 +152,44 @@
   // ---- Realistic example corpus (sourced from the suite's own fixtures) ----
   const NDA_MUTUAL = `# Mutual Non-Disclosure Agreement
 
-This Mutual NDA is between [Party A] and [Party B], effective [Effective Date], for the purpose of [Purpose].
+This Mutual Non-Disclosure Agreement (this "Agreement") is entered into as of [Effective Date] by and between [Party A] and [Party B] (each a "Party" and together the "Parties").
 
-Confidential Information is protected for [Term] from the Effective Date. This Agreement is governed by the laws of [Governing Law].`;
+## 1. Purpose
+The Parties wish to explore [Purpose] (the "Purpose"). In connection with the Purpose, each Party may disclose certain confidential and proprietary information to the other.
+
+## 2. Confidential Information
+"Confidential Information" means any non-public information disclosed by one Party (the "Disclosing Party") to the other (the "Receiving Party"), whether oral, written, or in any other form, that is designated as confidential or that reasonably should be understood to be confidential given its nature and the circumstances of disclosure, including business plans, financial information, customer data, product roadmaps, and technical information.
+
+## 3. Obligations of the Receiving Party
+The Receiving Party shall: (a) use the Confidential Information solely for the Purpose; (b) protect it using at least the same degree of care it uses for its own confidential information, and in no event less than reasonable care; and (c) not disclose it to any third party except to employees, advisors, and affiliates who have a need to know and are bound by confidentiality obligations no less protective than those in this Agreement.
+
+## 4. Exclusions
+Confidential Information does not include information that: (a) is or becomes public through no fault of the Receiving Party; (b) was rightfully known before disclosure; (c) is independently developed without use of the Confidential Information; or (d) is rightfully received from a third party without a duty of confidentiality.
+
+## 5. Compelled Disclosure
+If the Receiving Party is required by law or court order to disclose Confidential Information, it shall, where legally permitted, give the Disclosing Party prompt notice and reasonably cooperate in seeking protective treatment.
+
+## 6. Term
+This Agreement and the confidentiality obligations in it remain in effect for [Term] from the Effective Date, except that obligations with respect to trade secrets continue for as long as the information remains a trade secret under applicable law.
+
+## 7. Return or Destruction
+Upon the Disclosing Party's written request, the Receiving Party shall promptly return or destroy all Confidential Information, except for one archival copy retained for legal-compliance purposes or copies in routine system backups.
+
+## 8. No License; No Warranty
+No license or other right is granted except as expressly stated. All Confidential Information is provided "as is," without warranty of any kind.
+
+## 9. Remedies
+The Parties agree that a breach may cause irreparable harm for which monetary damages are inadequate, and that the Disclosing Party is entitled to seek injunctive relief in addition to any other available remedies.
+
+## 10. Governing Law and Jurisdiction
+This Agreement is governed by the laws of [Governing Law], without regard to its conflict-of-laws principles. The Parties consent to the exclusive jurisdiction of the courts located in [Jurisdiction].
+
+## 11. Miscellaneous
+This Agreement is the entire agreement between the Parties on its subject matter and supersedes all prior understandings. It may not be assigned without the other Party's prior written consent. If any provision is unenforceable, the remaining provisions remain in effect.
+
+IN WITNESS WHEREOF, the Parties have executed this Agreement as of the Effective Date.
+
+[Party A]: ____________________      [Party B]: ____________________`;
   const NDA_ONESIDED = `ONE-WAY NON-DISCLOSURE AGREEMENT
 
 Only the Receiving Party is bound by confidentiality; the Disclosing Party has no obligations.
@@ -177,21 +212,50 @@ Each party will protect the other's Confidential Information with reasonable car
     draft: [
       { name: "Mutual NDA", note: "Fills five bracketed placeholders ([Party A], [Term], …) in a mutual NDA cover.",
         set: { "d-template": NDA_MUTUAL,
-               "d-params": '{\n  "party_a": "Acme Corp",\n  "party_b": "Vendor LLC",\n  "effective_date": "2026-06-01",\n  "purpose": "evaluating a partnership",\n  "term": "two (2) years",\n  "governing_law": "Delaware"\n}' } },
+               "d-params": '{\n  "party_a": "Acme Corp",\n  "party_b": "Vendor LLC",\n  "effective_date": "June 1, 2026",\n  "purpose": "a potential commercial partnership",\n  "term": "two (2) years",\n  "governing_law": "the State of Delaware",\n  "jurisdiction": "New Castle County, Delaware"\n}' } },
       { name: "Vendor MSA", note: "A master services agreement — different placeholders, same deterministic fill.",
         set: { "d-template": `# Master Services Agreement
 
-This MSA is between [Client] and [Vendor], effective [Effective Date].
+This Master Services Agreement (this "Agreement") is entered into as of [Effective Date] by and between [Client] and [Vendor].
 
-[Vendor] will provide [Services] for a fee of [Fee], payable [Payment Terms]. Either party may terminate on [Notice] written notice.`,
-               "d-params": '{\n  "client": "Acme Corp",\n  "vendor": "Globex Consulting",\n  "effective_date": "2026-07-01",\n  "services": "cloud migration advisory",\n  "fee": "$25,000/month",\n  "payment_terms": "net-30",\n  "notice": "30 days"\n}' } },
+## 1. Services
+[Vendor] shall provide [Services] (the "Services") as described in one or more statements of work executed by the Parties. Each statement of work is governed by this Agreement.
+
+## 2. Fees and Payment
+In consideration for the Services, [Client] shall pay [Vendor] [Fee]. Invoices are due [Payment Terms] from the invoice date.
+
+## 3. Term and Termination
+This Agreement begins on the Effective Date and continues until terminated. Either Party may terminate for convenience on [Notice] written notice, or immediately for the other Party's uncured material breach.
+
+## 4. Intellectual Property
+Each Party retains its pre-existing intellectual property. Deliverables created specifically for [Client] under a statement of work are assigned to [Client] upon full payment.
+
+## 5. Limitation of Liability
+Except for breaches of confidentiality, neither Party's aggregate liability shall exceed the fees paid in the twelve months preceding the claim.
+
+## 6. Governing Law
+This Agreement is governed by the laws of [Governing Law].`,
+               "d-params": '{\n  "effective_date": "July 1, 2026",\n  "client": "Acme Corp",\n  "vendor": "Globex Consulting",\n  "services": "cloud migration advisory services",\n  "fee": "$25,000 per month",\n  "payment_terms": "net 30 days",\n  "notice": "thirty (30) days",\n  "governing_law": "the State of Delaware"\n}' } },
       { name: "Employment IP assignment", note: "Shows brackets that aren't party names resolve just as well.",
-        set: { "d-template": `# Proprietary Information & Inventions Agreement
+        set: { "d-template": `# Proprietary Information and Inventions Agreement
 
-[Employee] joins [Company] on [Start Date] in the role of [Role].
+This Agreement is entered into as of [Start Date] between [Company] and [Employee] in connection with [Employee]'s employment as [Role].
 
-[Employee] assigns to [Company] all intellectual property created within the scope of employment. This Agreement is governed by the laws of [Governing Law].`,
-               "d-params": '{\n  "employee": "Jordan Lee",\n  "company": "Acme Corp",\n  "start_date": "2026-08-15",\n  "role": "Senior Engineer",\n  "governing_law": "California"\n}' } },
+## 1. Confidential Information
+[Employee] shall hold in strict confidence and not disclose or use, except for the benefit of [Company], any proprietary or confidential information of [Company], including trade secrets, source code, customer lists, and business plans.
+
+## 2. Assignment of Inventions
+[Employee] hereby assigns to [Company] all right, title, and interest in any inventions and works of authorship conceived or developed within the scope of employment or using [Company]'s resources.
+
+## 3. Prior Inventions
+Inventions created by [Employee] before employment and listed in Exhibit A are excluded from this assignment.
+
+## 4. Return of Materials
+Upon termination, [Employee] shall return all [Company] property, including all copies of Confidential Information.
+
+## 5. Governing Law
+This Agreement is governed by the laws of [Governing Law].`,
+               "d-params": '{\n  "start_date": "August 15, 2026",\n  "company": "Acme Corp",\n  "employee": "Jordan Lee",\n  "role": "Senior Engineer",\n  "governing_law": "the State of California"\n}' } },
     ],
     compare: [
       { name: "Term silently changed (2→3 yrs)", note: "<b>Expect exit 2 — substantive.</b> The classic 'did the term quietly change in the round trip?' gate.",
@@ -219,8 +283,10 @@ Either party may seek injunctive relief. Governing law: Delaware.` } },
     ],
     "template-vault": [
       { name: "Search 'confidentiality'", note: "Keyword search across the vault.", set: { "v-action": "find", "v-arg": "confidentiality" } },
-      { name: "List all templates", note: "Everything in the seeded vault.", set: { "v-action": "list", "v-arg": "" } },
+      { name: "List all templates", note: "The seeded vault spans three categories: nda (×3), msa, and employment.", set: { "v-action": "list", "v-arg": "" } },
       { name: "Inspect house NDA", note: "Metadata + provenance for one template.", set: { "v-action": "info", "v-arg": "nda/house" } },
+      { name: "Inspect the MSA", note: "A non-NDA template — Master Services Agreement.", set: { "v-action": "info", "v-arg": "msa/standard" } },
+      { name: "IP-assignment template", note: "Employment IP & inventions agreement.", set: { "v-action": "info", "v-arg": "employment/ip-assignment" } },
       { name: "Clause provenance", note: "Which clause came from where (the composable-clause model).", set: { "v-action": "clauses", "v-arg": "nda/house" } },
       { name: "Version history", note: "The version trail of a template.", set: { "v-action": "history", "v-arg": "nda/house-startup" } },
       { name: "Vault dashboard", note: "Counts + health across the vault.", set: { "v-action": "stats", "v-arg": "" } },
@@ -340,7 +406,7 @@ Either party may seek injunctive relief. Governing law: Delaware.` } },
   // ---- Guided pipeline ----
   const PIPELINE = [
     { cli:'template-vault', n:1, title:'Store & version', cmd:'template-vault info nda/house --json', why:'Pull the versioned house NDA template from the vault.', payload:{ action:'info', arg:'nda/house' } },
-    { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"2026-06-01","purpose":"evaluating a partnership","term":"two (2) years","governing_law":"Delaware"}' } },
+    { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"June 1, 2026","purpose":"a potential commercial partnership","term":"two (2) years","governing_law":"the State of Delaware","jurisdiction":"New Castle County, Delaware"}' } },
     { cli:'nda-review', n:3, title:'Review', cmd:'nda-review-cli review --file nda.md --playbook house.json --why', why:'Score the draft against the house playbook before sending.', payload:{ text: NDA_BALANCED } },
     { cli:'compare', n:4, title:'Drift gate', cmd:'compare agreed.md ready-to-sign.md --json', why:'Catch any change between what was agreed and what came back to sign.', payload:{ base:'## Term and Survival\n\nThis agreement terminates two (2) years after the Effective Date.', candidate:'## Term and Survival\n\nThis agreement terminates three (3) years after the Effective Date.' } },
     { cli:'docx2pdf', n:5, title:'Render', cmd:'docx2pdf agreed.docx agreed.pdf', why:'Convert the agreed document to a PDF for signing.', sample:true },
