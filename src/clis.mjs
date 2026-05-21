@@ -6,7 +6,7 @@
 //   COP_COMPARE_CMD="node /tmp/compare-fresh/compare-cli.mjs"
 
 import { execFile } from "node:child_process";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, mkdir, copyFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,6 +60,42 @@ export async function seedVault() {
   } catch (e) {
     console.error("vault seed failed (explorer disabled):", e.message);
     SEED_VAULT = null;
+    return null;
+  }
+}
+
+// The sign explorer runs read-only commands against a demo sign DB seeded once
+// at startup: two SENT-but-pending requests (a tokenized signer inbox) plus one
+// fully-signed request (a completed audit chain). Seeded to the default
+// data/sign.db so read commands work with cwd alone (no env needed).
+let SIGN_SEED = null;
+let SIGN_SEED_REQ = null; // a request id for the "anatomy" view
+export function getSignSeed() { return SIGN_SEED; }
+export function getSignSeedReq() { return SIGN_SEED_REQ; }
+export async function seedSignDb() {
+  try {
+    const dir = await mkdtemp(join(tmpdir(), "cop-sign-seed-"));
+    await mkdir(join(dir, "data"), { recursive: true });
+    await copyFile(join(ASSETS, "sample.pdf"), join(dir, "contract.pdf"));
+    const [c, ...base] = BIN.sign;
+    const env = { ...process.env, NO_COLOR: "1", SIGN_DB: join(dir, "data", "sign.db") };
+    const run = (args) => new Promise((resolve) => execFile(c, [...base, ...args], { cwd: dir, timeout: 30000, env }, (e, so) => resolve(String(so || ""))));
+    const pendings = [
+      { title: "Vendor MSA — Acme ↔ Globex", a: "name:Alice Founder,email:alice@acme.com,order:1", b: "name:Bob Counsel,email:bob@globex.com,order:2" },
+      { title: "Mutual NDA — Acme ↔ Initech", a: "name:Carol Lee,email:carol@acme.com,order:1", b: "name:Dan Ops,email:dan@initech.com,order:2" },
+    ];
+    for (const p of pendings) {
+      const out = await run(["request", "create", "--title", p.title, "--document", "contract.pdf", "--signer", p.a, "--signer", p.b, "--provider", "local"]);
+      let id = null; try { id = JSON.parse(out).requestId; } catch { /* ignore */ }
+      if (id) { await run(["request", "send", "--request-id", id, "--provider", "local"]); if (!SIGN_SEED_REQ) SIGN_SEED_REQ = id; }
+    }
+    await run(["demo", "--out", "demo-bundle"]); // one fully-signed request → completed audit chain
+    SIGN_SEED = dir;
+    console.log("sign explorer seeded at", dir);
+    return dir;
+  } catch (e) {
+    console.error("sign seed failed (explorer disabled):", e.message);
+    SIGN_SEED = null;
     return null;
   }
 }
@@ -200,26 +236,39 @@ PLAYGROUNDS["nda-review"] = {
 // sign: run the offline local-provider demo (create → sign → verify → bundle).
 // No user input — signing arbitrary uploads is out of scope. Returns the audit
 // result plus the produced signed PDF for download.
+const SIGN_ACTIONS = new Set(["demo", "inbox", "requests", "anatomy", "audit"]);
 PLAYGROUNDS["sign"] = {
-  fields: [],
+  fields: ["action"],
   timeoutMs: 20000,
-  build() {
-    return {
-      argv: [...BIN.sign, "demo", "--out", "demo-bundle"],
-      readOutputFile: "demo-bundle/signed.pdf",
-      timeoutMs: 20000,
-    };
+  build({ action } = {}) {
+    const a = action || "demo";
+    if (!SIGN_ACTIONS.has(a)) throw new HttpError(400, `action must be one of: ${[...SIGN_ACTIONS].join(", ")}`);
+    if (a === "demo") {
+      // The offline lifecycle (create → sign → verify → bundle) in an ephemeral dir; returns the signed PDF.
+      return { argv: [...BIN.sign, "demo", "--out", "demo-bundle"], readOutputFile: "demo-bundle/signed.pdf", timeoutMs: 20000 };
+    }
+    const seed = getSignSeed();
+    if (!seed) throw new HttpError(503, "sign explorer not available (demo data not seeded)");
+    const base = [...BIN.sign];
+    if (a === "inbox") return { argv: [...base, "signer", "list", "--json"], cwd: seed };
+    if (a === "requests") return { argv: [...base, "request", "list", "--json"], cwd: seed };
+    if (a === "audit") return { argv: [...base, "audit", "scan", "--json"], cwd: seed };
+    // anatomy: the full state of one seeded request (document + signers + audit metadata)
+    const id = getSignSeedReq();
+    if (!id) throw new HttpError(503, "no seeded request to inspect");
+    return { argv: [...base, "request", "show", "--request-id", id, "--json"], cwd: seed };
   },
   shape(r) {
     const pdf = r.outputFile;
     return {
-      ok: r.exitCode === 0 && Boolean(pdf) && pdf.length > 0,
+      ok: r.exitCode === 0,
       exitCode: r.exitCode,
       timedOut: r.timedOut,
       result: tryJson(r.stdout),
+      raw: r.stdout,
+      stderr: r.stderr,
       pdfBytes: pdf ? pdf.length : 0,
       pdfBase64: pdf && pdf.length ? pdf.toString("base64") : null,
-      stderr: r.stderr,
     };
   },
 };

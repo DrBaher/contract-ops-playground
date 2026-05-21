@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { argv } from "node:process";
 import { runCli, LIMITS } from "./exec.mjs";
-import { PLAYGROUNDS, HttpError, seedVault, NDA_POLICY } from "./clis.mjs";
+import { PLAYGROUNDS, HttpError, seedVault, seedSignDb, NDA_POLICY } from "./clis.mjs";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = Number(process.env.PORT || 8080);
@@ -108,8 +108,8 @@ export { server };
 // (e.g. by tests, which start their own listener on an ephemeral port).
 const isMain = argv[1] && import.meta.url === pathToFileURL(argv[1]).href;
 if (isMain) {
-  // Seed the vault explorer (best-effort) before accepting traffic.
-  seedVault().finally(() => {
+  // Seed the vault + sign explorers (best-effort) before accepting traffic.
+  Promise.allSettled([seedVault(), seedSignDb()]).finally(() => {
     server.listen(PORT, () => console.log(`contract-ops-playground on :${PORT} (limits: ${JSON.stringify(LIMITS)})`));
   });
 }

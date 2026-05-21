@@ -76,6 +76,11 @@ test("sign build: offline demo → reads back the signed PDF", () => {
   assert.equal(b.readOutputFile, "demo-bundle/signed.pdf");
 });
 
+test("sign build: explorer actions need the seed; unknown action rejected", () => {
+  assert.throws(() => PLAYGROUNDS.sign.build({ action: "audit" }), /not seeded|not available/);
+  assert.throws(() => PLAYGROUNDS.sign.build({ action: "bogus" }), /action must be one of/);
+});
+
 test("sign shape: surfaces audit result + base64 PDF", () => {
   const s = PLAYGROUNDS.sign.shape({
     exitCode: 0, stdout: '{"auditChainValid":true}', stderr: "", timedOut: false,

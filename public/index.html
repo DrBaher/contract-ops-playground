@@ -136,10 +136,18 @@
   </section>
 
   <section class="panel" data-cli="sign">
-    <p class="hint">Run the offline signing demo — create → sign → verify → bundle, fully local (no provider, no network) — and download the real signed PDF it produces.</p>
+    <p class="hint">Explore the offline e-signature engine: run the full lifecycle, browse the tokenized signer inbox, inspect a request, or verify the tamper-evident audit chain — all server-side, no network.</p>
     <div class="note" data-note="sign"></div>
-    <button class="run" data-cli="sign">Run sign demo</button>
-    <p class="doc">Learn more: <a href="https://sign-cli-demo-production.up.railway.app/web-demo/" target="_blank" rel="noopener">full guided demo ↗</a> · <a href="https://cli.drbaher.com/tools/sign-cli/" target="_blank" rel="noopener">sign-cli docs ↗</a></p>
+    <label for="s-action">What to run</label>
+    <select id="s-action">
+      <option value="demo">Run the offline demo (create → sign → verify → bundle → signed PDF)</option>
+      <option value="inbox">Signer inbox — pending, tokenized signer views</option>
+      <option value="requests">All requests — every request + status</option>
+      <option value="anatomy">Request anatomy — full state + audit metadata</option>
+      <option value="audit">Audit chain — walk + verify every hash chain</option>
+    </select>
+    <button class="run" data-cli="sign">Run</button>
+    <p class="doc">Learn more: <a href="https://sign-cli-demo-production.up.railway.app/web-demo/" target="_blank" rel="noopener">guided web-demo ↗</a> · <a href="https://cli.drbaher.com/tools/sign-cli/" target="_blank" rel="noopener">sign-cli docs ↗</a></p>
     <div class="out" id="s-out"></div>
   </section>
 
@@ -311,7 +319,7 @@ This Agreement is governed by the laws of [Governing Law].`,
   };
   const NOTES = {
     docx2pdf: "Click <b>Use a sample contract</b> to convert a bundled .docx, or upload your own. LibreOffice renders it to a real PDF you can download.",
-    sign: "No input needed — this runs the full offline lifecycle (create → send → sign → verify → export) with the built-in PAdES signer and returns the signed PDF + audit result.",
+    sign: "The <b>demo</b> runs the full offline lifecycle and returns a signed PDF; the other actions explore a seeded demo database — a tokenized signer inbox, request anatomy, and the verified hash-chained audit log.",
   };
 
   function showNote(cli, html){ const n = document.querySelector('.note[data-note="'+cli+'"]'); if (n){ n.innerHTML = html || ''; n.style.display = html ? 'block' : 'none'; } }
@@ -375,11 +383,31 @@ This Agreement is governed by the laws of [Governing Law].`,
     "template-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
     "nda-review": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'reviewed' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.report || d.stderr || '')+'</pre>'; },
     sign: (d, el) => {
-      let html = badge(d.ok, d.ok ? 'signed + verified' : 'exit '+d.exitCode); const r = d.result || {};
-      if (d.ok) { html += '<pre class="result">'+esc(JSON.stringify({ auditChainValid: r.auditChainValid, signatureCount: r.signatureCount, messageDigestVerified: r.messageDigestVerified }, null, 2))+'</pre>';
-        if (d.pdfBase64) html += '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="signed.pdf">Download signed.pdf ('+d.pdfBytes+' bytes)</a></p>'; }
-      else { html += '<pre class="result">'+esc(d.stderr || '')+'</pre>'; }
-      el.innerHTML = html;
+      const action = $('#s-action') ? $('#s-action').value : 'demo';
+      const r = d.result;
+      if (action === 'demo') {
+        let html = badge(d.ok && !!d.pdfBase64, d.ok ? 'signed + verified' : 'exit '+d.exitCode);
+        if (d.ok && r) { html += '<pre class="result">'+esc(JSON.stringify({ requestId: r.requestId, auditChainValid: r.auditChainValid, signatureCount: r.signatureCount, messageDigestVerified: r.messageDigestVerified }, null, 2))+'</pre>';
+          if (d.pdfBase64) html += '<p class="hint"><a href="data:application/pdf;base64,'+d.pdfBase64+'" download="signed.pdf">Download signed.pdf ('+d.pdfBytes+' bytes)</a></p>'; }
+        else html += '<pre class="result">'+esc(d.stderr || d.raw || '')+'</pre>';
+        el.innerHTML = html; return;
+      }
+      if (!d.ok || r == null) { el.innerHTML = badge(false, 'exit '+d.exitCode) + '<pre class="result">'+esc(d.stderr || d.raw || '')+'</pre>'; return; }
+      if (action === 'inbox') {
+        const inbox = Array.isArray(r) ? r : [];
+        const body = inbox.length ? inbox.map(e => '• ' + (e.title || '(request)') + '\n    status: ' + (e.status || '?') + ' · tokens: ' + ((e.tokens || []).length)).join('\n\n') : '(inbox empty)';
+        el.innerHTML = badge(true, inbox.length + ' pending signer view(s)') + '<pre class="result">'+esc(body)+'</pre>'; return;
+      }
+      if (action === 'requests') {
+        const reqs = Array.isArray(r) ? r : [];
+        const body = reqs.map(q => '• ' + (q.title || q.id) + '\n    status: ' + (q.status || '?') + ' · signers: ' + (q.signers ?? '?') + ' · provider: ' + (q.provider || '?')).join('\n\n');
+        el.innerHTML = badge(true, reqs.length + ' request(s)') + '<pre class="result">'+esc(body)+'</pre>'; return;
+      }
+      if (action === 'audit') {
+        const body = (r.results || []).map(x => (x.valid ? '✓' : '✗') + ' ' + (x.title || x.requestId)).join('\n');
+        el.innerHTML = badge(r.invalid === 0, (r.valid || 0) + '/' + (r.total || 0) + ' hash chains verified' + (r.invalid ? ' — ' + r.invalid + ' BROKEN' : '')) + '<pre class="result">'+esc(body)+'</pre>'; return;
+      }
+      el.innerHTML = badge(true, 'request anatomy') + '<pre class="result">'+esc(JSON.stringify(r, null, 2))+'</pre>';
     },
   };
   function payloadFor(cli) {
@@ -387,7 +415,7 @@ This Agreement is governed by the laws of [Governing Law].`,
     if (cli === 'compare') return { base: $('#c-base').value, candidate: $('#c-cand').value };
     if (cli === 'template-vault') return { action: $('#v-action').value, arg: $('#v-arg').value };
     if (cli === 'nda-review') return { text: $('#n-text').value };
-    if (cli === 'sign') return {};
+    if (cli === 'sign') return { action: $('#s-action') ? $('#s-action').value : 'demo' };
     return {};
   }
   const OUT = { draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out' };
