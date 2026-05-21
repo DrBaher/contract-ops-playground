@@ -126,7 +126,7 @@
     <label for="n-text">NDA text</label>
     <textarea id="n-text" rows="14"></textarea>
     <button class="run" data-cli="nda-review">Run review</button>
-    <p class="doc">The sandbox runs the <b>deterministic</b> engine (no network): it returns the scoring verdict + risk breakdown vs the house playbook. Semantic red-flag <i>findings</i> light up with the opt-in LLM tier — see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a> for the LLM-adjudicated draft → review → negotiate flow, or the <a href="https://cli.drbaher.com/tools/nda-review-cli/" target="_blank" rel="noopener">docs ↗</a>.</p>
+    <p class="doc">Scored against the bundled <b>house policy book</b> (11 clause rules). The deterministic engine surfaces real findings + a risk breakdown with no network — compare the two NDAs above: one passes, one violates the policy on every clause. The opt-in LLM tier adds prose redlines on top — see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a> or the <a href="https://cli.drbaher.com/tools/nda-review-cli/" target="_blank" rel="noopener">docs ↗</a>.</p>
     <div class="out" id="n-out"></div>
   </section>
 
@@ -152,44 +152,25 @@
   // ---- Realistic example corpus (sourced from the suite's own fixtures) ----
   const NDA_MUTUAL = `# Mutual Non-Disclosure Agreement
 
-This Mutual Non-Disclosure Agreement (this "Agreement") is entered into as of [Effective Date] by and between [Party A] and [Party B] (each a "Party" and together the "Parties").
+This Mutual Non-Disclosure Agreement is made as of [Effective Date] between [Party A] and [Party B] (each a "Party"). The Parties are evaluating a potential business relationship and may share confidential information.
 
-## 1. Purpose
-The Parties wish to explore [Purpose] (the "Purpose"). In connection with the Purpose, each Party may disclose certain confidential and proprietary information to the other.
+## 1. Confidential Information
+Confidential Information means non-public information that one Party shares with the other and that is marked confidential or that a reasonable person would understand to be confidential, such as business plans, financial data, and technical information.
 
-## 2. Confidential Information
-"Confidential Information" means any non-public information disclosed by one Party (the "Disclosing Party") to the other (the "Receiving Party"), whether oral, written, or in any other form, that is designated as confidential or that reasonably should be understood to be confidential given its nature and the circumstances of disclosure, including business plans, financial information, customer data, product roadmaps, and technical information.
+## 2. Use and Protection
+Each Party will use the other's Confidential Information solely to evaluate the business relationship and will protect it with reasonable care, sharing it only with personnel who need to know and are under similar confidentiality duties.
 
-## 3. Obligations of the Receiving Party
-The Receiving Party shall: (a) use the Confidential Information solely for the Purpose; (b) protect it using at least the same degree of care it uses for its own confidential information, and in no event less than reasonable care; and (c) not disclose it to any third party except to employees, advisors, and affiliates who have a need to know and are bound by confidentiality obligations no less protective than those in this Agreement.
+## 3. Exceptions
+Confidential Information does not include information that is public through no fault of the receiving Party, was already known to it, is independently developed, or is lawfully obtained from a third party.
 
-## 4. Exclusions
-Confidential Information does not include information that: (a) is or becomes public through no fault of the Receiving Party; (b) was rightfully known before disclosure; (c) is independently developed without use of the Confidential Information; or (d) is rightfully received from a third party without a duty of confidentiality.
+## 4. Term
+This Agreement lasts for two (2) years, and each Party's confidentiality duties continue for three (3) years after disclosure.
 
-## 5. Compelled Disclosure
-If the Receiving Party is required by law or court order to disclose Confidential Information, it shall, where legally permitted, give the Disclosing Party prompt notice and reasonably cooperate in seeking protective treatment.
+## 5. Return of Materials
+On written request, each Party will return or delete the other's Confidential Information, keeping only routine backup copies that remain protected.
 
-## 6. Term
-This Agreement and the confidentiality obligations in it remain in effect for [Term] from the Effective Date, except that obligations with respect to trade secrets continue for as long as the information remains a trade secret under applicable law.
-
-## 7. Return or Destruction
-Upon the Disclosing Party's written request, the Receiving Party shall promptly return or destroy all Confidential Information, except for one archival copy retained for legal-compliance purposes or copies in routine system backups.
-
-## 8. No License; No Warranty
-No license or other right is granted except as expressly stated. All Confidential Information is provided "as is," without warranty of any kind.
-
-## 9. Remedies
-The Parties agree that a breach may cause irreparable harm for which monetary damages are inadequate, and that the Disclosing Party is entitled to seek injunctive relief in addition to any other available remedies.
-
-## 10. Governing Law and Jurisdiction
-This Agreement is governed by the laws of [Governing Law], without regard to its conflict-of-laws principles. The Parties consent to the exclusive jurisdiction of the courts located in [Jurisdiction].
-
-## 11. Miscellaneous
-This Agreement is the entire agreement between the Parties on its subject matter and supersedes all prior understandings. It may not be assigned without the other Party's prior written consent. If any provision is unenforceable, the remaining provisions remain in effect.
-
-IN WITNESS WHEREOF, the Parties have executed this Agreement as of the Effective Date.
-
-[Party A]: ____________________      [Party B]: ____________________`;
+## 6. Governing Law
+This Agreement is governed by the laws of [Governing Law].`;
   const NDA_ONESIDED = `ONE-WAY NON-DISCLOSURE AGREEMENT
 
 Only the Receiving Party is bound by confidentiality; the Disclosing Party has no obligations.
@@ -197,47 +178,56 @@ Confidential Information means any and all information, whether or not marked co
 Confidentiality obligations are perpetual and survive indefinitely.
 The Receiving Party provides uncapped indemnity and unlimited liability.
 Exclusive jurisdiction in a foreign venue. The Receiving Party shall not compete for five years.`;
-  const NDA_BALANCED = `# House Mutual NDA
+  const NDA_BALANCED = `# Mutual Non-Disclosure Agreement
 
-## Purpose
-The parties wish to evaluate a potential business relationship.
+This Mutual Non-Disclosure Agreement is made as of June 1, 2026 between Acme Corp and Vendor LLC (each a "Party"). The Parties are evaluating a potential business relationship and may share confidential information.
 
-## Term and Survival
-This agreement terminates two (2) years after the Effective Date. Confidentiality obligations survive for three (3) years thereafter.
+## 1. Confidential Information
+Confidential Information means non-public information that one Party shares with the other and that is marked confidential or that a reasonable person would understand to be confidential, such as business plans, financial data, and technical information.
 
-## Confidentiality
-Each party will protect the other's Confidential Information with reasonable care. Standard carve-outs apply: public domain, prior knowledge, independent development, lawful third-party receipt, and disclosure required by law.`;
-  const NDA_LONG = `MUTUAL NON-DISCLOSURE AGREEMENT
+## 2. Use and Protection
+Each Party will use the other's Confidential Information solely to evaluate the business relationship and will protect it with reasonable care, sharing it only with personnel who need to know and are under similar confidentiality duties.
 
-This Mutual Non-Disclosure Agreement (this "Agreement") is entered into as of June 1, 2026 by and between Acme Corp, a Delaware corporation, and Vendor LLC, a California limited liability company (each a "Party" and together the "Parties"), in connection with their evaluation of a potential commercial partnership (the "Purpose").
+## 3. Exceptions
+Confidential Information does not include information that is public through no fault of the receiving Party, was already known to it, is independently developed, or is lawfully obtained from a third party.
 
-1. Confidential Information. "Confidential Information" means any non-public information disclosed by one Party (the "Disclosing Party") to the other (the "Receiving Party"), whether oral, written, electronic, or in any other form, that is designated as confidential or that reasonably should be understood to be confidential given its nature and the circumstances of disclosure, including business plans, financial information, pricing, customer and supplier lists, product roadmaps, source code, and technical information.
+## 4. Term
+This Agreement lasts for two (2) years, and each Party's confidentiality duties continue for three (3) years after disclosure.
 
-2. Obligations. The Receiving Party shall (a) use the Confidential Information solely for the Purpose; (b) protect it using at least the same degree of care it uses to protect its own confidential information of like importance, and in no event less than a reasonable degree of care; and (c) limit disclosure to its employees, officers, advisors, and affiliates who have a need to know for the Purpose and who are bound by written confidentiality obligations no less protective than those in this Agreement.
+## 5. Return of Materials
+On written request, each Party will return or delete the other's Confidential Information, keeping only routine backup copies that remain protected.
 
-3. Exclusions. Confidential Information does not include information that (a) is or becomes publicly available through no act or omission of the Receiving Party; (b) was rightfully in the Receiving Party's possession before disclosure; (c) is independently developed by the Receiving Party without use of or reference to the Confidential Information; or (d) is rightfully obtained from a third party without a duty of confidentiality.
+## 6. Governing Law
+This Agreement is governed by the laws of the State of Delaware.`;
+  const NDA_LONG = `ONE-WAY NON-DISCLOSURE AGREEMENT
 
-4. Compelled Disclosure. If the Receiving Party is required by law, regulation, or valid court order to disclose Confidential Information, it shall, to the extent legally permitted, provide the Disclosing Party with prompt written notice and reasonably cooperate, at the Disclosing Party's expense, in any effort to obtain protective treatment.
+This Non-Disclosure Agreement is entered into as of June 1, 2026 between Discloser MegaCorp Inc. ("Discloser") and Recipient SmallCo LLC ("Recipient"). Only the Recipient is bound by confidentiality; the Discloser assumes no obligations and the arrangement is expressly unilateral.
 
-5. Term and Survival. This Agreement commences on the Effective Date and continues for two (2) years, unless earlier terminated by either Party on thirty (30) days' written notice. The confidentiality obligations survive for three (3) years following disclosure, except that obligations with respect to trade secrets continue for so long as the information remains a trade secret under applicable law.
+1. Confidential Information. "Confidential Information" means all information of the Discloser, including but not limited to any and all business, technical, financial, and other information in any form, whether or not marked or identified as confidential.
 
-6. Return or Destruction. Upon the Disclosing Party's written request or termination of this Agreement, the Receiving Party shall promptly return or destroy all Confidential Information and certify such destruction in writing, except that the Receiving Party may retain one archival copy solely for legal-compliance purposes and copies created by routine automated backup, which remain subject to this Agreement.
+2. Use. The Recipient may use the Confidential Information for any purpose, without limitation, including in connection with its own products and services.
 
-7. Non-Solicitation. During the term and for twelve (12) months thereafter, neither Party shall knowingly solicit for employment any employee of the other Party with whom it had material contact in connection with the Purpose; provided that general advertisements not specifically targeted at such employees shall not be a breach.
+3. Exceptions. The only exception is information that the Recipient can prove was public, and only where disclosure is required by law.
 
-8. Remedies. The Parties agree that a breach of this Agreement may cause irreparable harm for which monetary damages would be an inadequate remedy, and that the non-breaching Party shall be entitled to seek injunctive relief in addition to any other remedies available at law or in equity.
+4. Term and Survival. The Recipient's confidentiality obligations are perpetual and survive indefinitely with respect to all Confidential Information, including ordinary business information.
 
-9. No License; No Warranty. No license or other right under any patent, copyright, trademark, or trade secret is granted under this Agreement except as expressly set forth herein. All Confidential Information is provided "AS IS" without warranty of any kind.
+5. Return or Destruction. Upon the Discloser's request, the Recipient shall immediately return or destroy all Confidential Information within 7 days and certify such destruction in writing to the Discloser.
 
-10. Governing Law and Jurisdiction. This Agreement is governed by the laws of the State of Delaware, without regard to its conflict-of-laws principles, and the Parties consent to the exclusive jurisdiction of the state and federal courts located in New Castle County, Delaware.
+6. Residuals. Notwithstanding the foregoing, the Recipient may freely use any residual information retained in the unaided memory of its personnel for any purpose.
 
-11. Miscellaneous. This Agreement constitutes the entire agreement between the Parties regarding its subject matter and supersedes all prior or contemporaneous understandings. Neither Party may assign this Agreement without the other Party's prior written consent, except to a successor in connection with a merger or sale of substantially all assets. If any provision is held unenforceable, the remaining provisions shall remain in full force and effect.`;
+7. Non-Solicitation and Non-Compete. During the term and for five (5) years thereafter, the Recipient shall not solicit any employee of the Discloser and shall not compete with the Discloser in any market (a non-compete and non-solicit covenant).
+
+8. Liability and Remedies. The Recipient accepts unlimited liability for any breach and shall indemnify the Discloser for all losses without cap. The Discloser is entitled to injunctive relief and any other remedy.
+
+9. Governing Law. This Agreement is governed by the laws of the Cayman Islands, and the parties submit to the exclusive and sole jurisdiction of the courts of the Cayman Islands.
+
+10. Assignment. The Discloser may freely assign this Agreement to any third party without consent of the Recipient.`;
 
   const EX = {
     draft: [
       { name: "Mutual NDA", note: "Fills five bracketed placeholders ([Party A], [Term], …) in a mutual NDA cover.",
         set: { "d-template": NDA_MUTUAL,
-               "d-params": '{\n  "party_a": "Acme Corp",\n  "party_b": "Vendor LLC",\n  "effective_date": "June 1, 2026",\n  "purpose": "a potential commercial partnership",\n  "term": "two (2) years",\n  "governing_law": "the State of Delaware",\n  "jurisdiction": "New Castle County, Delaware"\n}' } },
+               "d-params": '{\n  "party_a": "Acme Corp",\n  "party_b": "Vendor LLC",\n  "effective_date": "June 1, 2026",\n  "governing_law": "the State of Delaware"\n}' } },
       { name: "Vendor MSA", note: "A master services agreement — different placeholders, same deterministic fill.",
         set: { "d-template": `# Master Services Agreement
 
@@ -294,19 +284,12 @@ This Agreement is governed by the laws of [Governing Law].`,
                "c-cand": `## Confidentiality\n\nEach party will protect the other's Confidential Information with reasonable care.` } },
     ],
     "nda-review": [
-      { name: "Full mutual NDA (long form)", note: "A complete, 11-clause mutual NDA — the kind you'd actually receive. The deterministic engine returns the verdict + risk breakdown; the LLM tier (full demo) adds clause-by-clause findings on terms like the broad definition and the non-solicit.",
+      { name: "Counterparty NDA — fails the house policy", note: "A one-sided NDA that violates the house policy book on every clause: perpetual term, any-purpose use, broad 'including but not limited to' definition, uncapped liability, hidden non-compete, exclusive foreign jurisdiction, free assignment. <b>Expect: block, ~11 high-severity findings.</b>",
         set: { "n-text": NDA_LONG } },
-      { name: "Balanced mutual NDA", note: "A reasonable mutual NDA with standard carve-outs — low risk score.",
+      { name: "Compliant mutual NDA", note: "The same NDA the draft tab produces — mutual, finite term, standard carve-outs, no red-flag terms. <b>Expect: far lower risk, no high-severity findings.</b>",
         set: { "n-text": NDA_BALANCED } },
-      { name: "One-sided / aggressive", note: "Unilateral, perpetual, uncapped, hidden non-compete. The deterministic engine returns the structural verdict; the LLM tier flags each red flag (see the note below).",
+      { name: "One-sided / aggressive (short)", note: "A short unilateral NDA — perpetual, uncapped, hidden non-compete.",
         set: { "n-text": NDA_ONESIDED } },
-      { name: "Vendor NDA", note: "A typical inbound vendor NDA to score against your house position.",
-        set: { "n-text": `MUTUAL NON-DISCLOSURE AGREEMENT between Acme Corp and Globex Consulting.
-
-Confidential Information means information disclosed and marked confidential, or that should reasonably be understood to be confidential.
-Term: confidentiality survives three (3) years from disclosure.
-Use is limited to the sole purpose of evaluating the business relationship.
-Either party may seek injunctive relief. Governing law: Delaware.` } },
     ],
     "template-vault": [
       { name: "Search 'confidentiality'", note: "Keyword search across the vault.", set: { "v-action": "find", "v-arg": "confidentiality" } },
@@ -433,8 +416,8 @@ Either party may seek injunctive relief. Governing law: Delaware.` } },
   // ---- Guided pipeline ----
   const PIPELINE = [
     { cli:'template-vault', n:1, title:'Store & version', cmd:'template-vault info nda/house --json', why:'Pull the versioned house NDA template from the vault.', payload:{ action:'info', arg:'nda/house' } },
-    { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"June 1, 2026","purpose":"a potential commercial partnership","term":"two (2) years","governing_law":"the State of Delaware","jurisdiction":"New Castle County, Delaware"}' } },
-    { cli:'nda-review', n:3, title:'Review', cmd:'nda-review-cli review --file nda.md --playbook house.json --why', why:'Score the draft against the house playbook before sending.', payload:{ text: NDA_BALANCED } },
+    { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the policy-compliant template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"June 1, 2026","governing_law":"the State of Delaware"}' } },
+    { cli:'nda-review', n:3, title:'Review', cmd:'nda-review-cli review --file nda.md --playbook house.json --why', why:'Score the drafted NDA against the house policy book — it conforms (no high-severity findings).', payload:{ text: NDA_BALANCED } },
     { cli:'compare', n:4, title:'Drift gate', cmd:'compare agreed.md ready-to-sign.md --json', why:'Catch any change between what was agreed and what came back to sign.', payload:{ base:'## Term and Survival\n\nThis agreement terminates two (2) years after the Effective Date.', candidate:'## Term and Survival\n\nThis agreement terminates three (3) years after the Effective Date.' } },
     { cli:'docx2pdf', n:5, title:'Render', cmd:'docx2pdf agreed.docx agreed.pdf', why:'Convert the agreed document to a PDF for signing.', sample:true },
     { cli:'sign', n:6, title:'Sign', cmd:'sign document agreed.pdf --signer "Alice" --auto-place first', why:'Seal it offline with a verifiable PAdES signature + audit chain.', payload:{} },
