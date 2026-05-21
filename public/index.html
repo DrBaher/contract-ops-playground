@@ -124,7 +124,7 @@
     <div class="examples" data-for="nda-review"><b>Examples</b></div>
     <div class="note" data-note="nda-review"></div>
     <label for="n-text">NDA text</label>
-    <textarea id="n-text" rows="9"></textarea>
+    <textarea id="n-text" rows="14"></textarea>
     <button class="run" data-cli="nda-review">Run review</button>
     <p class="doc">The sandbox runs the <b>deterministic</b> engine (no network): it returns the scoring verdict + risk breakdown vs the house playbook. Semantic red-flag <i>findings</i> light up with the opt-in LLM tier — see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a> for the LLM-adjudicated draft → review → negotiate flow, or the <a href="https://cli.drbaher.com/tools/nda-review-cli/" target="_blank" rel="noopener">docs ↗</a>.</p>
     <div class="out" id="n-out"></div>
@@ -207,6 +207,31 @@ This agreement terminates two (2) years after the Effective Date. Confidentialit
 
 ## Confidentiality
 Each party will protect the other's Confidential Information with reasonable care. Standard carve-outs apply: public domain, prior knowledge, independent development, lawful third-party receipt, and disclosure required by law.`;
+  const NDA_LONG = `MUTUAL NON-DISCLOSURE AGREEMENT
+
+This Mutual Non-Disclosure Agreement (this "Agreement") is entered into as of June 1, 2026 by and between Acme Corp, a Delaware corporation, and Vendor LLC, a California limited liability company (each a "Party" and together the "Parties"), in connection with their evaluation of a potential commercial partnership (the "Purpose").
+
+1. Confidential Information. "Confidential Information" means any non-public information disclosed by one Party (the "Disclosing Party") to the other (the "Receiving Party"), whether oral, written, electronic, or in any other form, that is designated as confidential or that reasonably should be understood to be confidential given its nature and the circumstances of disclosure, including business plans, financial information, pricing, customer and supplier lists, product roadmaps, source code, and technical information.
+
+2. Obligations. The Receiving Party shall (a) use the Confidential Information solely for the Purpose; (b) protect it using at least the same degree of care it uses to protect its own confidential information of like importance, and in no event less than a reasonable degree of care; and (c) limit disclosure to its employees, officers, advisors, and affiliates who have a need to know for the Purpose and who are bound by written confidentiality obligations no less protective than those in this Agreement.
+
+3. Exclusions. Confidential Information does not include information that (a) is or becomes publicly available through no act or omission of the Receiving Party; (b) was rightfully in the Receiving Party's possession before disclosure; (c) is independently developed by the Receiving Party without use of or reference to the Confidential Information; or (d) is rightfully obtained from a third party without a duty of confidentiality.
+
+4. Compelled Disclosure. If the Receiving Party is required by law, regulation, or valid court order to disclose Confidential Information, it shall, to the extent legally permitted, provide the Disclosing Party with prompt written notice and reasonably cooperate, at the Disclosing Party's expense, in any effort to obtain protective treatment.
+
+5. Term and Survival. This Agreement commences on the Effective Date and continues for two (2) years, unless earlier terminated by either Party on thirty (30) days' written notice. The confidentiality obligations survive for three (3) years following disclosure, except that obligations with respect to trade secrets continue for so long as the information remains a trade secret under applicable law.
+
+6. Return or Destruction. Upon the Disclosing Party's written request or termination of this Agreement, the Receiving Party shall promptly return or destroy all Confidential Information and certify such destruction in writing, except that the Receiving Party may retain one archival copy solely for legal-compliance purposes and copies created by routine automated backup, which remain subject to this Agreement.
+
+7. Non-Solicitation. During the term and for twelve (12) months thereafter, neither Party shall knowingly solicit for employment any employee of the other Party with whom it had material contact in connection with the Purpose; provided that general advertisements not specifically targeted at such employees shall not be a breach.
+
+8. Remedies. The Parties agree that a breach of this Agreement may cause irreparable harm for which monetary damages would be an inadequate remedy, and that the non-breaching Party shall be entitled to seek injunctive relief in addition to any other remedies available at law or in equity.
+
+9. No License; No Warranty. No license or other right under any patent, copyright, trademark, or trade secret is granted under this Agreement except as expressly set forth herein. All Confidential Information is provided "AS IS" without warranty of any kind.
+
+10. Governing Law and Jurisdiction. This Agreement is governed by the laws of the State of Delaware, without regard to its conflict-of-laws principles, and the Parties consent to the exclusive jurisdiction of the state and federal courts located in New Castle County, Delaware.
+
+11. Miscellaneous. This Agreement constitutes the entire agreement between the Parties regarding its subject matter and supersedes all prior or contemporaneous understandings. Neither Party may assign this Agreement without the other Party's prior written consent, except to a successor in connection with a merger or sale of substantially all assets. If any provision is held unenforceable, the remaining provisions shall remain in full force and effect.`;
 
   const EX = {
     draft: [
@@ -269,6 +294,8 @@ This Agreement is governed by the laws of [Governing Law].`,
                "c-cand": `## Confidentiality\n\nEach party will protect the other's Confidential Information with reasonable care.` } },
     ],
     "nda-review": [
+      { name: "Full mutual NDA (long form)", note: "A complete, 11-clause mutual NDA — the kind you'd actually receive. The deterministic engine returns the verdict + risk breakdown; the LLM tier (full demo) adds clause-by-clause findings on terms like the broad definition and the non-solicit.",
+        set: { "n-text": NDA_LONG } },
       { name: "Balanced mutual NDA", note: "A reasonable mutual NDA with standard carve-outs — low risk score.",
         set: { "n-text": NDA_BALANCED } },
       { name: "One-sided / aggressive", note: "Unilateral, perpetual, uncapped, hidden non-compete. The deterministic engine returns the structural verdict; the LLM tier flags each red flag (see the note below).",
