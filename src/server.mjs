@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { argv } from "node:process";
 import { runCli, LIMITS } from "./exec.mjs";
-import { PLAYGROUNDS, HttpError, seedVault } from "./clis.mjs";
+import { PLAYGROUNDS, HttpError, seedVault, NDA_POLICY } from "./clis.mjs";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = Number(process.env.PORT || 8080);
@@ -54,6 +54,11 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/sample.docx") {
       const buf = await readFile(join(ROOT, "public", "sample.docx"));
       return send(res, 200, buf, { "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    }
+    if (req.method === "GET" && url.pathname === "/policy.json") {
+      // The exact house policy book nda-review scores against.
+      const buf = await readFile(NDA_POLICY);
+      return send(res, 200, buf, { "content-type": "application/json" });
     }
     if (req.method === "GET" && url.pathname === "/api/meta") {
       return send(res, 200, { clis: Object.keys(PLAYGROUNDS), limits: LIMITS });

@@ -127,6 +127,8 @@
     <textarea id="n-text" rows="14"></textarea>
     <button class="run" data-cli="nda-review">Run review</button>
     <p class="doc">Scored against the bundled <b>house policy book</b> (11 clause rules). The deterministic engine surfaces real findings + a risk breakdown with no network — compare the two NDAs above: one passes, one violates the policy on every clause. The opt-in LLM tier adds prose redlines on top — see the <a href="https://nda-review-cli-production.up.railway.app/" target="_blank" rel="noopener">full demo ↗</a> or the <a href="https://cli.drbaher.com/tools/nda-review-cli/" target="_blank" rel="noopener">docs ↗</a>.</p>
+    <p style="margin-top:8px"><button class="chip" id="policy-toggle">▸ View the house policy book</button></p>
+    <div id="policy-view" style="display:none"></div>
     <div class="out" id="n-out"></div>
   </section>
 
@@ -440,6 +442,32 @@ This Agreement is governed by the laws of [Governing Law].`,
     ev.target.disabled = true;
     for (let i = 0; i < PIPELINE.length; i++) { await runStep(i); }
     ev.target.disabled = false;
+  });
+
+  // ---- House policy book viewer ----
+  function renderPolicyBook(d, el) {
+    const cap = s => String(s).replace(/_/g, ' ');
+    const dl = d.review_decision_logic || {};
+    let h = '<div class="note"><b>' + esc(d.org_name || 'House') + '</b> policy book · v' + esc(d.version || '?') + ' · ' + (d.policy || []).length + ' clause rules — the review scores each clause against these.</div><pre class="result">';
+    for (const c of (d.policy || [])) {
+      h += '• ' + esc(cap(c.clause)) + '\n    prefers: ' + esc(c.preferred_position || '') + '\n    flags:   ' + esc((c.red_flags || []).join('; ')) + '\n\n';
+    }
+    h += 'Decision logic\n';
+    for (const k of ['approve_if', 'escalate_if', 'block_if']) {
+      if (Array.isArray(dl[k])) h += '  ' + k.replace('_if', '').toUpperCase() + ': ' + esc(dl[k].join('; ')) + '\n';
+    }
+    el.innerHTML = h + '</pre>';
+  }
+  const pToggle = $('#policy-toggle'), pView = $('#policy-view'); let pLoaded = false;
+  if (pToggle) pToggle.addEventListener('click', async () => {
+    if (pView.style.display === 'none') {
+      pView.style.display = 'block'; pToggle.textContent = '▾ Hide the house policy book';
+      if (!pLoaded) {
+        pView.innerHTML = '<p class="hint">Loading…</p>';
+        try { const r = await fetch('/policy.json'); renderPolicyBook(await r.json(), pView); pLoaded = true; }
+        catch { pView.innerHTML = '<span class="badge warn">could not load policy</span>'; }
+      }
+    } else { pView.style.display = 'none'; pToggle.textContent = '▸ View the house policy book'; }
   });
 
   // Deep-link: ?cli=<id> opens straight to that tab.
