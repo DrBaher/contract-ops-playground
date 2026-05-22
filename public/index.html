@@ -474,6 +474,7 @@ This Agreement is governed by the laws of [Governing Law].`,
 
   // ---- Guided pipeline ----
   const PIPELINE = [
+    { cli:'extract', n:0, title:'Ingest (front door)', cmd:'extract counterparty-nda.md --json', why:"If the document comes from outside — a counterparty's paper rather than your own template — extract turns it into structured JSON (parties, governing law, clause map) first. Authoring from your own template? Skip to step 1.", payload:{ text: NDA_BALANCED } },
     { cli:'template-vault', n:1, title:'Store & version', cmd:'template-vault info nda/house --json', why:'Pull the versioned house NDA template from the vault.', payload:{ action:'info', arg:'nda/house' } },
     { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the policy-compliant template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"June 1, 2026","governing_law":"the State of Delaware"}' } },
     { cli:'nda-review', n:3, title:'Review', cmd:'nda-review-cli review --file nda.md --playbook house.json --why', why:'Score the drafted NDA against the house policy book — it conforms (no high-severity findings).', payload:{ text: NDA_BALANCED } },
