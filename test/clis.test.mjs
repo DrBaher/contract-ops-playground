@@ -2,10 +2,32 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PLAYGROUNDS, HttpError } from "../src/clis.mjs";
 
-test("seven playgrounds are registered", () => {
+test("eight playgrounds are registered", () => {
   assert.deepEqual(
     Object.keys(PLAYGROUNDS).sort(),
-    ["compare", "docx2pdf", "draft", "extract", "nda-review", "sign", "template-vault"],
+    ["compare", "contract-vault", "docx2pdf", "draft", "extract", "nda-review", "sign", "template-vault"],
+  );
+});
+
+test("contract-vault build: rejects a non-whitelisted (mutating) action with 400", () => {
+  assert.throws(
+    () => PLAYGROUNDS["contract-vault"].build({ action: "ingest", arg: "x" }),
+    (e) => e instanceof HttpError && e.status === 400,
+  );
+});
+
+test("contract-vault build: a valid action with no seeded register is 503 (not a crash)", () => {
+  // getSeedContractVault() is null in unit tests (seedContractVault never ran).
+  assert.throws(
+    () => PLAYGROUNDS["contract-vault"].build({ action: "list" }),
+    (e) => e instanceof HttpError && e.status === 503,
+  );
+});
+
+test("contract-vault build: 'get' without an id is a 400", () => {
+  assert.throws(
+    () => PLAYGROUNDS["contract-vault"].build({ action: "get" }),
+    (e) => e instanceof HttpError && e.status === 400,
   );
 });
 

@@ -24,6 +24,7 @@ export const BIN = {
   templatevault: cmd("TEMPLATEVAULT", ["template-vault"]),
   ndareview: cmd("NDAREVIEW", ["nda-review-cli"]),
   sign: cmd("SIGN", ["sign"]),
+  contractvault: cmd("CONTRACTVAULT", ["contract-vault"]),
 };
 
 // nda-review's `review` needs a policy file; bundle the suite default in the image.
@@ -61,6 +62,37 @@ export async function seedVault() {
   } catch (e) {
     console.error("vault seed failed (explorer disabled):", e.message);
     SEED_VAULT = null;
+    return null;
+  }
+}
+
+// The contract-vault explorer runs read-only commands against a seeded register
+// of SIGNED contracts: init a vault, then ingest two bundled extract-cli payloads
+// (no extract needed — `.json` payloads ingest directly). Read-only commands
+// don't mutate it, so the seeded dir is shared safely across requests.
+const CONTRACT_VAULT_PAYLOADS = ["acme-msa.json", "initech-nda.json"].map(
+  (f) => join(ASSETS, "contract-vault", f));
+let SEED_CONTRACT_VAULT = null;
+export function getSeedContractVault() { return SEED_CONTRACT_VAULT; }
+export async function seedContractVault() {
+  try {
+    const dir = await mkdtemp(join(tmpdir(), "cop-cvault-seed-"));
+    const [c, ...base] = BIN.contractvault;
+    const env = { ...process.env, NO_COLOR: "1" };
+    await new Promise((resolve, reject) => {
+      execFile(c, [...base, "init", dir], { timeout: 30000, env }, (err) => err ? reject(err) : resolve());
+    });
+    for (const payload of CONTRACT_VAULT_PAYLOADS) {
+      await new Promise((resolve) => {
+        execFile(c, [...base, "ingest", payload, "--vault", dir], { timeout: 20000, env }, () => resolve());
+      });
+    }
+    SEED_CONTRACT_VAULT = dir;
+    console.log("contract-vault explorer seeded at", dir);
+    return dir;
+  } catch (e) {
+    console.error("contract-vault seed failed (explorer disabled):", e.message);
+    SEED_CONTRACT_VAULT = null;
     return null;
   }
 }
@@ -311,6 +343,43 @@ PLAYGROUNDS["sign"] = {
       pdfBytes: pdf ? pdf.length : 0,
       pdfBase64: pdf && pdf.length ? pdf.toString("base64") : null,
     };
+  },
+};
+
+// contract-vault: a READ-ONLY explorer over a seeded register of signed
+// contracts. Only non-mutating, no-network subcommands are allowed (no
+// init/ingest/accept), so a shared seed dir stays safe. due/risk pin --as-of to
+// the demo's reference date so the 2025–2027 sample dates surface as upcoming.
+const CVAULT_ACTIONS = new Set(["list", "find", "due", "risk", "stats", "get"]);
+const CVAULT_ID_RE = /^[a-z0-9][a-z0-9 ._/-]{0,118}$/i;
+PLAYGROUNDS["contract-vault"] = {
+  fields: ["action", "arg"],
+  build({ action, arg } = {}) {
+    const a = String(action || "list");
+    if (!CVAULT_ACTIONS.has(a)) throw new HttpError(400, `action must be one of: ${[...CVAULT_ACTIONS].join(", ")}`);
+    // Validate user input before touching server state (seed), so a bad request
+    // is a 400 even when the register hasn't seeded.
+    const args = [a];
+    if (a === "get") {
+      const id = String(arg ?? "").trim();
+      if (!id) throw new HttpError(400, "'get' needs a deal id (e.g. acme-corporation/master-services-agreement)");
+      if (!CVAULT_ID_RE.test(id)) throw new HttpError(400, "invalid deal id");
+      args.push(id);
+    } else if (a === "find") {
+      const q = String(arg ?? "").trim();
+      if (q) {
+        if (q.length > 120) throw new HttpError(400, "query too long");
+        args.push(q);
+      }
+    }
+    const seed = getSeedContractVault();
+    if (!seed) throw new HttpError(503, "contract-vault explorer not available (register not seeded)");
+    if (a === "due" || a === "risk") args.push("--within", "365d", "--as-of", "2026-01-01");
+    args.push("--json", "--vault", seed);
+    return { argv: [...BIN.contractvault, ...args] };
+  },
+  shape(r) {
+    return { ok: r.exitCode === 0, exitCode: r.exitCode, timedOut: r.timedOut, result: tryJson(r.stdout), raw: r.stdout, stderr: r.stderr };
   },
 };
 

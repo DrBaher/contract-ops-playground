@@ -52,7 +52,7 @@
 <body>
   <header>
     <h1>contract-ops playground</h1>
-    <p>Run the real seven-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, offline signing. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
+    <p>Run the real eight-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, offline signing, a register of signed contracts. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
   </header>
 
   <div class="tabs" role="tablist">
@@ -63,6 +63,7 @@
     <button class="tab" role="tab" data-cli="template-vault" aria-selected="false">template-vault</button>
     <button class="tab" role="tab" data-cli="nda-review" aria-selected="false">nda-review</button>
     <button class="tab" role="tab" data-cli="sign" aria-selected="false">sign</button>
+    <button class="tab" role="tab" data-cli="contract-vault" aria-selected="false">contract-vault</button>
     <button class="tab pipe" role="tab" data-cli="pipeline" aria-selected="false">▸ full pipeline</button>
   </div>
 
@@ -166,6 +167,26 @@
     <button class="run" data-cli="sign">Run</button>
     <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/sign-cli/" target="_blank" rel="noopener">sign-cli docs ↗</a></p>
     <div class="out" id="s-out"></div>
+  </section>
+
+  <section class="panel" data-cli="contract-vault">
+    <p class="hint">Explore a seeded register of <b>signed</b> contracts (read-only): query the portfolio and project upcoming renewals / notice deadlines. Runs <code>contract-vault &lt;action&gt; --json</code>.</p>
+    <div class="examples" data-for="contract-vault"><b>Examples</b></div>
+    <div class="note" data-note="contract-vault"></div>
+    <label for="cv-action">Action</label>
+    <select id="cv-action">
+      <option value="list">list (all registered deals)</option>
+      <option value="find">find (query the portfolio)</option>
+      <option value="due">due (upcoming renewals/deadlines)</option>
+      <option value="risk">risk (renewal exposure: missed / imminent notices)</option>
+      <option value="stats">stats (portfolio dashboard)</option>
+      <option value="get">get (one deal record)</option>
+    </select>
+    <label for="cv-arg">Query / deal id — for <code>find</code> (free text) and <code>get</code> (e.g. <code>acme-corporation/master-services-agreement</code>)</label>
+    <input id="cv-arg" type="text" value="" style="width:100%;margin-top:4px" />
+    <button class="run" data-cli="contract-vault">Run</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/contract-vault-cli/" target="_blank" rel="noopener">contract-vault-cli docs ↗</a></p>
+    <div class="out" id="cv-out"></div>
   </section>
 
   <section class="panel" data-cli="pipeline">
@@ -339,6 +360,14 @@ This Agreement is governed by the laws of [Governing Law].`,
       { name: "Version history", note: "The version trail of a template.", set: { "v-action": "history", "v-arg": "nda/house-startup" } },
       { name: "Vault dashboard", note: "Counts + health across the vault.", set: { "v-action": "stats", "v-arg": "" } },
     ],
+    "contract-vault": [
+      { name: "List the register", note: "Both seeded signed contracts: an Acme ↔ Globex MSA (auto-renewing, $120k) and an Initech NDA.", set: { "cv-action": "list", "cv-arg": "" } },
+      { name: "Find 'Acme'", note: "Full-text query across the registered deals.", set: { "cv-action": "find", "cv-arg": "Acme" } },
+      { name: "Upcoming deadlines", note: "Project renewals / notice deadlines (as of 2026-01-01, within a year) as structured JSON.", set: { "cv-action": "due", "cv-arg": "" } },
+      { name: "Renewal exposure", note: "Missed / imminent auto-renewal notice deadlines (CRITICAL when auto-renewing).", set: { "cv-action": "risk", "cv-arg": "" } },
+      { name: "Portfolio stats", note: "Counts, total value, by counterparty / governing law.", set: { "cv-action": "stats", "cv-arg": "" } },
+      { name: "Inspect a deal", note: "One full record — parties, dates, term, obligations — each with confidence + source.", set: { "cv-action": "get", "cv-arg": "acme-corporation/master-services-agreement" } },
+    ],
     docx2pdf: [],
     sign: [],
   };
@@ -411,6 +440,7 @@ This Agreement is governed by the laws of [Governing Law].`,
     draft: (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'exit 0 — filled' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? d.output : (d.stderr || d.output))+'</pre>'; },
     compare: (d, el) => { el.innerHTML = badge(d.exitCode===0, 'exit '+d.exitCode+' — '+d.meaning) + '<pre class="result">'+esc(d.raw || d.stderr || '')+'</pre>'; },
     "template-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
+    "contract-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
     "nda-review": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'reviewed' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.report || d.stderr || '')+'</pre>'; },
     sign: (d, el) => {
       const action = $('#s-action') ? $('#s-action').value : 'demo';
@@ -445,11 +475,12 @@ This Agreement is governed by the laws of [Governing Law].`,
     if (cli === 'draft') return { template: $('#d-template').value, params: $('#d-params').value };
     if (cli === 'compare') return { base: $('#c-base').value, candidate: $('#c-cand').value };
     if (cli === 'template-vault') return { action: $('#v-action').value, arg: $('#v-arg').value };
+    if (cli === 'contract-vault') return { action: $('#cv-action').value, arg: $('#cv-arg').value };
     if (cli === 'nda-review') return { text: $('#n-text').value };
     if (cli === 'sign') return { action: $('#s-action') ? $('#s-action').value : 'demo' };
     return {};
   }
-  const OUT = { extract:'#e-out', draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out' };
+  const OUT = { extract:'#e-out', draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out', 'contract-vault':'#cv-out' };
   for (const cli of Object.keys(OUT)) {
     const btn = document.querySelector('button.run[data-cli="'+cli+'"]'); if (!btn) continue;
     btn.addEventListener('click', (ev) => { ev.target.disabled = true; run(cli, payloadFor(cli), $(OUT[cli]), RENDER[cli]).finally(()=> ev.target.disabled = false); });
