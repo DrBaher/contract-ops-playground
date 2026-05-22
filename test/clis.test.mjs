@@ -22,6 +22,13 @@ test("extract build: empty text is tolerated (no crash)", () => {
   assert.equal(b.files["contract.md"], "");
 });
 
+test("extract upload build: .docx buffer → contract.docx + --json", () => {
+  const b = PLAYGROUNDS.extract.upload.build(Buffer.from("PK\x03\x04"));
+  assert.ok(b.argv.includes("contract.docx") && b.argv.includes("--json"));
+  assert.ok(Buffer.isBuffer(b.files["contract.docx"]));
+  assert.equal(typeof b.timeoutMs, "number");
+});
+
 test("extract shape: exit 0 → ok + parsed result", () => {
   const s = PLAYGROUNDS.extract.shape({ exitCode: 0, stdout: '{"parties":[]}', stderr: "", timedOut: false });
   assert.equal(s.ok, true);

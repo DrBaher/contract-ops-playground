@@ -122,6 +122,19 @@ export const PLAYGROUNDS = {
         files: { "contract.md": text ?? "" },
       };
     },
+    // Optional .docx upload path (same `extract … --json`, shared shape). The
+    // server routes an octet-stream POST here. NOTE: we deliberately do NOT
+    // install the `[docx]` extra in the image — extract's stdlib .docx reader
+    // honors Word heading styles (Heading1-9/Title → clause map), whereas the
+    // python-docx path flattens them and loses the clause structure.
+    upload: {
+      accept: ".docx",
+      maxBytes: UPLOAD_MAX,
+      timeoutMs: Number(process.env.COP_EXTRACT_DOCX_TIMEOUT_MS || 20000),
+      build(buf) {
+        return { argv: [...BIN.extract, "contract.docx", "--json"], files: { "contract.docx": buf }, timeoutMs: this.timeoutMs };
+      },
+    },
     shape(r) {
       // exit 1 = low-signal document — a *finding*, not a crash: valid JSON is
       // still emitted, so surface it with a flag rather than treating it as failure.

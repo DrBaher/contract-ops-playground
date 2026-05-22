@@ -73,6 +73,11 @@
     <label for="e-text">Contract text (markdown / plain text)</label>
     <textarea id="e-text" rows="16"></textarea>
     <button class="run" data-cli="extract">Run extract</button>
+    <p class="hint" style="margin-top:16px">…or extract a <b>Word document</b> — shows extract's <code>.docx</code> reader recovering the clause map from a real contract's heading styles:</p>
+    <div class="examples"><button class="chip" id="e-sample-docx">Use the sample NDA (.docx)</button></div>
+    <label for="e-file" style="margin-top:6px">…or upload your own .docx</label>
+    <input id="e-file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="margin-top:4px" />
+    <button class="run" id="e-run-docx" style="margin-top:8px">Extract the .docx</button>
     <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/extract-cli/" target="_blank" rel="noopener">extract-cli docs ↗</a></p>
     <div class="out" id="e-out"></div>
   </section>
@@ -470,6 +475,27 @@ This Agreement is governed by the laws of [Governing Law].`,
   });
   $('#x-sample').addEventListener('click', (ev) => {
     convertDocx(async () => { const r = await fetch('/sample.docx'); return r.arrayBuffer(); }, $('#x-out'), ev.target);
+  });
+
+  // ---- extract from a .docx (binary POST to the same /api/run/extract) ----
+  async function extractDocx(getBuf, el, btn) {
+    btn.disabled = true; el.innerHTML = '<p class="hint">Extracting…</p>';
+    try {
+      const buf = await getBuf();
+      const r = await fetch('/api/run/extract', { method:'POST', headers:{'content-type':'application/octet-stream'}, body: buf });
+      const d = await r.json();
+      if (!r.ok) { el.innerHTML = badge(false,'error') + '<pre class="result">'+esc(d.error||'failed')+'</pre>'; return; }
+      RENDER.extract(d, el);
+    } catch(e) { el.innerHTML = badge(false,'network error'); }
+    finally { btn.disabled = false; }
+  }
+  $('#e-run-docx').addEventListener('click', (ev) => {
+    const file = $('#e-file').files[0]; const el = $('#e-out');
+    if (!file) { el.innerHTML = badge(false, 'choose a .docx or use the sample NDA'); return; }
+    extractDocx(() => file.arrayBuffer(), el, ev.target);
+  });
+  $('#e-sample-docx').addEventListener('click', (ev) => {
+    extractDocx(async () => { const r = await fetch('/extract-sample.docx'); return r.arrayBuffer(); }, $('#e-out'), ev.target);
   });
 
   // ---- Guided pipeline ----

@@ -55,6 +55,10 @@ const server = createServer(async (req, res) => {
       const buf = await readFile(join(ROOT, "public", "sample.docx"));
       return send(res, 200, buf, { "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     }
+    if (req.method === "GET" && url.pathname === "/extract-sample.docx") {
+      const buf = await readFile(join(ROOT, "public", "extract-sample.docx"));
+      return send(res, 200, buf, { "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    }
     if (req.method === "GET" && url.pathname === "/policy.json") {
       // The exact house policy book nda-review scores against.
       const buf = await readFile(NDA_POLICY);
@@ -71,10 +75,15 @@ const server = createServer(async (req, res) => {
       if (rateLimited(ip)) return send(res, 429, { error: "rate limit — slow down" });
 
       let built;
-      if (pg.type === "upload") {
-        const buf = await readRawBody(req, pg.maxBytes);
+      // A playground is upload-mode if declared so (docx2pdf), OR if it offers an
+      // optional `upload` sub-mode (extract) and the client sent a binary body.
+      const ctype = (req.headers["content-type"] || "").toLowerCase();
+      const asUpload = pg.type === "upload" || (pg.upload && ctype.includes("octet-stream"));
+      if (asUpload) {
+        const cap = pg.maxBytes ?? pg.upload?.maxBytes ?? LIMITS.maxInputBytes;
+        const buf = await readRawBody(req, cap);
         if (!buf.length) return send(res, 400, { error: "empty upload" });
-        built = pg.build(buf);
+        built = pg.type === "upload" ? pg.build(buf) : pg.upload.build(buf);
       } else {
         const raw = (await readRawBody(req, LIMITS.maxInputBytes * (pg.fields.length + 1))).toString("utf8");
         let body; try { body = JSON.parse(raw || "{}"); } catch { return send(res, 400, { error: "body must be JSON" }); }
