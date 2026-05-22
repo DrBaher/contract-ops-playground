@@ -52,10 +52,11 @@
 <body>
   <header>
     <h1>contract-ops playground</h1>
-    <p>Run the real six-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, offline signing. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
+    <p>Run the real seven-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, offline signing. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
   </header>
 
   <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-cli="extract" aria-selected="false">extract</button>
     <button class="tab" role="tab" data-cli="draft" aria-selected="true">draft</button>
     <button class="tab" role="tab" data-cli="compare" aria-selected="false">compare</button>
     <button class="tab" role="tab" data-cli="docx2pdf" aria-selected="false">docx2pdf</button>
@@ -64,6 +65,17 @@
     <button class="tab" role="tab" data-cli="sign" aria-selected="false">sign</button>
     <button class="tab pipe" role="tab" data-cli="pipeline" aria-selected="false">▸ full pipeline</button>
   </div>
+
+  <section class="panel" data-cli="extract">
+    <p class="hint">Turn any contract into structured JSON. Runs <code>extract contract.md --json</code> (deterministic tier, no network). Every field carries a <b>confidence</b> + <b>source</b> — verify, don't trust.</p>
+    <div class="examples" data-for="extract"><b>Examples</b></div>
+    <div class="note" data-note="extract"></div>
+    <label for="e-text">Contract text (markdown / plain text)</label>
+    <textarea id="e-text" rows="16"></textarea>
+    <button class="run" data-cli="extract">Run extract</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/extract-cli/" target="_blank" rel="noopener">extract-cli docs ↗</a></p>
+    <div class="out" id="e-out"></div>
+  </section>
 
   <section class="panel" data-cli="draft" data-active>
     <p class="hint">Fill placeholders in a contract template with your own values. Runs <code>draft --no-llm</code> in a sandbox.</p>
@@ -237,6 +249,14 @@ This Non-Disclosure Agreement is entered into as of June 1, 2026 between Disclos
 10. Assignment. The Discloser may freely assign this Agreement to any third party without consent of the Recipient.`;
 
   const EX = {
+    extract: [
+      { name: "Mutual NDA (clean structure)", note: "Markdown <code>##</code> headings → the clause map lands straight on the suite's canonical vocabulary; parties, term, and Delaware governing law all extract deterministically.",
+        set: { "e-text": NDA_BALANCED } },
+      { name: "Counterparty NDA (foreign paper)", note: "A dense one-sided NDA — extract still pulls the parties, the Cayman-Islands governing law, and the term, each with a <b>confidence</b> + <b>source</b>.",
+        set: { "e-text": NDA_LONG } },
+      { name: "Unfilled template", note: "Even with bracketed placeholders, the clause structure extracts; the parties surface as the placeholders.",
+        set: { "e-text": NDA_MUTUAL } },
+    ],
     draft: [
       { name: "Mutual NDA", note: "Fills five bracketed placeholders ([Party A], [Term], …) in a mutual NDA cover.",
         set: { "d-template": NDA_MUTUAL,
@@ -378,6 +398,11 @@ This Agreement is governed by the laws of [Governing Law].`,
     } catch (e) { outEl.innerHTML = '<span class="badge warn">network error</span>'; }
   }
   const RENDER = {
+    extract: (d, el) => {
+      const txt = d.lowSignal ? 'exit 1 — low-signal (valid JSON still emitted)' : (d.ok ? 'exit 0 — extracted' : 'exit '+d.exitCode);
+      const body = d.result ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || '');
+      el.innerHTML = badge(d.ok, txt) + '<pre class="result">'+esc(body)+'</pre>';
+    },
     draft: (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'exit 0 — filled' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? d.output : (d.stderr || d.output))+'</pre>'; },
     compare: (d, el) => { el.innerHTML = badge(d.exitCode===0, 'exit '+d.exitCode+' — '+d.meaning) + '<pre class="result">'+esc(d.raw || d.stderr || '')+'</pre>'; },
     "template-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
@@ -411,6 +436,7 @@ This Agreement is governed by the laws of [Governing Law].`,
     },
   };
   function payloadFor(cli) {
+    if (cli === 'extract') return { text: $('#e-text').value };
     if (cli === 'draft') return { template: $('#d-template').value, params: $('#d-params').value };
     if (cli === 'compare') return { base: $('#c-base').value, candidate: $('#c-cand').value };
     if (cli === 'template-vault') return { action: $('#v-action').value, arg: $('#v-arg').value };
@@ -418,7 +444,7 @@ This Agreement is governed by the laws of [Governing Law].`,
     if (cli === 'sign') return { action: $('#s-action') ? $('#s-action').value : 'demo' };
     return {};
   }
-  const OUT = { draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out' };
+  const OUT = { extract:'#e-out', draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out' };
   for (const cli of Object.keys(OUT)) {
     const btn = document.querySelector('button.run[data-cli="'+cli+'"]'); if (!btn) continue;
     btn.addEventListener('click', (ev) => { ev.target.disabled = true; run(cli, payloadFor(cli), $(OUT[cli]), RENDER[cli]).finally(()=> ev.target.disabled = false); });

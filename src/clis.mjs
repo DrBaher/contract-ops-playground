@@ -17,6 +17,7 @@ function cmd(id, fallback) {
 }
 
 export const BIN = {
+  extract: cmd("EXTRACT", ["extract"]),
   draft: cmd("DRAFT", ["draft"]),
   compare: cmd("COMPARE", ["compare"]),
   docx2pdf: cmd("DOCX2PDF", ["docx2pdf"]),
@@ -109,6 +110,33 @@ function tryJson(s) {
 // Each playground: validate user fields, map to { argv, files, readOutputFile },
 // and shape the executor result into a JSON response for the UI.
 export const PLAYGROUNDS = {
+  extract: {
+    // Paste any contract (markdown / text) → structured JSON. Deterministic tier
+    // only (no --llm → no network). Text paste only — no untrusted binary parsing.
+    fields: ["text"],
+    build({ text }) {
+      // Written as .md so the native markdown reader runs (HTML inside a .txt is
+      // auto-detected too); the deterministic cascade handles the rest.
+      return {
+        argv: [...BIN.extract, "contract.md", "--json"],
+        files: { "contract.md": text ?? "" },
+      };
+    },
+    shape(r) {
+      // exit 1 = low-signal document — a *finding*, not a crash: valid JSON is
+      // still emitted, so surface it with a flag rather than treating it as failure.
+      return {
+        ok: r.exitCode === 0,
+        exitCode: r.exitCode,
+        timedOut: r.timedOut,
+        lowSignal: r.exitCode === 1,
+        result: tryJson(r.stdout),
+        raw: r.stdout,
+        stderr: r.stderr,
+      };
+    },
+  },
+
   draft: {
     // Fill placeholders in a user-supplied template with user-supplied params.
     fields: ["template", "params"],

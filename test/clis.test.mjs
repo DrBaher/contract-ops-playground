@@ -2,11 +2,38 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PLAYGROUNDS, HttpError } from "../src/clis.mjs";
 
-test("six playgrounds are registered", () => {
+test("seven playgrounds are registered", () => {
   assert.deepEqual(
     Object.keys(PLAYGROUNDS).sort(),
-    ["compare", "docx2pdf", "draft", "nda-review", "sign", "template-vault"],
+    ["compare", "docx2pdf", "draft", "extract", "nda-review", "sign", "template-vault"],
   );
+});
+
+test("extract build: pasted text → contract.md + --json", () => {
+  const b = PLAYGROUNDS.extract.build({ text: "# NDA\n\nBetween A and B." });
+  assert.ok(b.argv.includes("contract.md") && b.argv.includes("--json"));
+  assert.equal(b.files["contract.md"], "# NDA\n\nBetween A and B.");
+  // deterministic tier only — never opts into the networked LLM tier
+  assert.ok(!b.argv.includes("--llm"));
+});
+
+test("extract build: empty text is tolerated (no crash)", () => {
+  const b = PLAYGROUNDS.extract.build({});
+  assert.equal(b.files["contract.md"], "");
+});
+
+test("extract shape: exit 0 → ok + parsed result", () => {
+  const s = PLAYGROUNDS.extract.shape({ exitCode: 0, stdout: '{"parties":[]}', stderr: "", timedOut: false });
+  assert.equal(s.ok, true);
+  assert.equal(s.lowSignal, false);
+  assert.deepEqual(s.result, { parties: [] });
+});
+
+test("extract shape: exit 1 is a low-signal finding, not a failure (JSON still surfaced)", () => {
+  const s = PLAYGROUNDS.extract.shape({ exitCode: 1, stdout: '{"parties":[]}', stderr: "warn", timedOut: false });
+  assert.equal(s.ok, false);
+  assert.equal(s.lowSignal, true);
+  assert.deepEqual(s.result, { parties: [] });
 });
 
 test("draft build: template + params → argv/files, --no-llm always on", () => {
