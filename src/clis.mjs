@@ -25,6 +25,7 @@ export const BIN = {
   ndareview: cmd("NDAREVIEW", ["nda-review-cli"]),
   sign: cmd("SIGN", ["sign"]),
   contractvault: cmd("CONTRACTVAULT", ["contract-vault"]),
+  contractlint: cmd("CONTRACTLINT", ["contract-lint"]),
 };
 
 // nda-review's `review` needs a policy file; bundle the suite default in the image.
@@ -380,6 +381,34 @@ PLAYGROUNDS["contract-vault"] = {
   },
   shape(r) {
     return { ok: r.exitCode === 0, exitCode: r.exitCode, timedOut: r.timedOut, result: tryJson(r.stdout), raw: r.stdout, stderr: r.stderr };
+  },
+};
+
+// contract-lint: paste a contract → internal-consistency findings (placeholders,
+// broken cross-references, defined-term + numbering + party + date defects).
+// Deterministic, no model, no network. Text paste only — no untrusted binary parsing.
+PLAYGROUNDS["contract-lint"] = {
+  fields: ["text"],
+  build({ text }) {
+    // Written as .md so the markdown reader runs; auto-detected by extension, so
+    // no --format needed. Default --fail-on error: exit 1 only when an error rule fires.
+    return {
+      argv: [...BIN.contractlint, "lint", "contract.md", "--json"],
+      files: { "contract.md": text ?? "" },
+    };
+  },
+  shape(r) {
+    // exit 1 = findings at/above --fail-on (the gate tripped) — a result, not a
+    // crash: valid JSON is still emitted, so surface it with a flag. exit 2 = error.
+    return {
+      ok: r.exitCode === 0 || r.exitCode === 1,
+      exitCode: r.exitCode,
+      timedOut: r.timedOut,
+      gateTripped: r.exitCode === 1,
+      result: tryJson(r.stdout),
+      raw: r.stdout,
+      stderr: r.stderr,
+    };
   },
 };
 

@@ -52,7 +52,7 @@
 <body>
   <header>
     <h1>contract-ops playground</h1>
-    <p>Run the real eight-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, offline signing, a register of signed contracts. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
+    <p>Run the real nine-CLI suite on a realistic corpus — Common-Paper-style NDAs, vendor agreements, version drift, a seeded template vault, contract linting, offline signing, a register of signed contracts. Pick an example to load it, then run it (or edit and run your own). Everything executes in a locked sandbox.</p>
   </header>
 
   <div class="tabs" role="tablist">
@@ -64,6 +64,7 @@
     <button class="tab" role="tab" data-cli="nda-review" aria-selected="false">nda-review</button>
     <button class="tab" role="tab" data-cli="sign" aria-selected="false">sign</button>
     <button class="tab" role="tab" data-cli="contract-vault" aria-selected="false">contract-vault</button>
+    <button class="tab" role="tab" data-cli="contract-lint" aria-selected="false">contract-lint</button>
     <button class="tab pipe" role="tab" data-cli="pipeline" aria-selected="false">▸ full pipeline</button>
   </div>
 
@@ -189,6 +190,17 @@
     <div class="out" id="cv-out"></div>
   </section>
 
+  <section class="panel" data-cli="contract-lint">
+    <p class="hint">Lint a contract for <b>internal-consistency</b> defects — leftover placeholders, broken cross-references, undefined/unused/duplicate defined terms, numbering gaps, party-name &amp; date inconsistencies. Runs <code>contract-lint contract.md --json</code> (deterministic, no model, no network). Where compare gates <i>drift between versions</i>, contract-lint gates <i>defects within one document</i>.</p>
+    <div class="examples" data-for="contract-lint"><b>Examples</b></div>
+    <div class="note" data-note="contract-lint"></div>
+    <label for="cl-text">Contract text (markdown / plain text)</label>
+    <textarea id="cl-text" rows="16"></textarea>
+    <button class="run" data-cli="contract-lint">Run contract-lint</button>
+    <p class="doc">Learn more: <a href="https://cli.drbaher.com/tools/contract-lint-cli/" target="_blank" rel="noopener">contract-lint-cli docs ↗</a></p>
+    <div class="out" id="cl-out"></div>
+  </section>
+
   <section class="panel" data-cli="pipeline">
     <p class="hint">Watch one deal — <b>Acme Corp ↔ Vendor LLC, mutual NDA</b> — move through the whole suite. Run each step (each executes in its own sandbox; the data is the same deal at every stage).</p>
     <button class="run" id="pipe-all" style="margin:6px 0 4px">▸ Run all steps</button>
@@ -274,6 +286,98 @@ This Non-Disclosure Agreement is entered into as of June 1, 2026 between Disclos
 
 10. Assignment. The Discloser may freely assign this Agreement to any third party without consent of the Recipient.`;
 
+  // contract-lint demo fixtures — verbatim from the repo's tests/fixtures/corpus.
+  const CL_FLAWED_MSA = `# Master Services Agreement
+
+This Master Services Agreement (the "Agreement") is made as of February 1, 2026
+between Globex Corporation and Soylent LLC.
+
+## 1. Definitions
+
+"Confidential Information" means any non-public information disclosed by a party. The
+Confidential Information is protected under Section 2.
+"Severance Fee" means the amount payable on early termination.
+
+## 2. Services
+
+Globex Corporation shall deliver the services described in {{statement_of_work}}. Payment
+follows the schedule in Section 5.2. Globex Corp. may use subcontractors.
+
+## 4. Payment
+
+Invoices are due within thirty days, as detailed in Section 9.3.
+
+## 5. Confidentiality
+
+"Confidential Information" means information that a party marks confidential. The parties
+shall protect Confidential Information as set out in Section 5.2.
+
+## 6. Term
+
+This Agreement is effective as of February 1, 2026 and expires on January 1, 2026.`;
+
+  const CL_PLACEHOLDERS = `# Services Agreement
+
+This Agreement is between [Party Name] and {{counterparty}}.
+
+## 1. Scope
+
+The provider shall deliver <SCOPE OF WORK> by the deadline. Fees are TBD.
+
+## 2. Signatures
+
+Signed by: __________
+
+Witness: [•]
+
+Notes: see the attached <ADDENDUM>.`;
+
+  const CL_NUMBERING = `# Lease Agreement
+
+## 1. Parties
+
+This lease is between Hooli Inc. and the tenant, dated March 1, 2026.
+
+## 1. Premises
+
+The premises are described in this section.
+
+## 3. Rent
+
+Rent is due monthly. See Article IV for the renewal terms.
+
+## 4. Signatures
+
+Signed on February 30, 2026 by HOOLI Inc.`;
+
+  const CL_CLEAN = `# Mutual Non-Disclosure Agreement
+
+This Mutual Non-Disclosure Agreement (the "Agreement") is entered into as of
+January 1, 2026 between Acme Corporation and Beta Corporation.
+
+## 1. Definitions
+
+"Confidential Information" means any non-public information disclosed by a party. The
+Confidential Information includes business plans and customer lists. Each party shall
+protect the Confidential Information as described in Section 2.
+
+## 2. Obligations
+
+Each party shall keep the Confidential Information secret and use it only for the purpose
+described in Section 3. Acme Corporation and Beta Corporation agree to handle the
+Confidential Information under this Agreement.
+
+## 3. Purpose
+
+The purpose of this Agreement is to evaluate a potential transaction. This Agreement
+governs the Confidential Information exchanged by Acme Corporation and Beta Corporation
+for that purpose.
+
+## 4. Term
+
+This Agreement is effective as of January 1, 2026 and expires on January 1, 2028. The
+Agreement remains binding on Acme Corporation and Beta Corporation until then.`;
+
   const EX = {
     extract: [
       { name: "Mutual NDA (clean structure)", note: "Markdown <code>##</code> headings → the clause map lands straight on the suite's canonical vocabulary; parties, term, and Delaware governing law all extract deterministically.",
@@ -282,6 +386,16 @@ This Non-Disclosure Agreement is entered into as of June 1, 2026 between Disclos
         set: { "e-text": NDA_LONG } },
       { name: "Unfilled template", note: "Even with bracketed placeholders, the clause structure extracts; the parties surface as the placeholders.",
         set: { "e-text": NDA_MUTUAL } },
+    ],
+    "contract-lint": [
+      { name: "Flawed MSA (many defects)", note: "A realistic MSA with a broken cross-reference, an unfilled <code>{{placeholder}}</code>, a duplicate + an unused definition, a numbering gap, variant party spellings, and an expiry <i>before</i> the effective date.",
+        set: { "cl-text": CL_FLAWED_MSA } },
+      { name: "Unfilled template (placeholders)", note: "Every leftover-placeholder shape — <code>[Brackets]</code>, <code>{{mustache}}</code>, <code>&lt;ANGLE&gt;</code>, <code>TBD</code>, blanks, <code>[•]</code> — flagged as errors.",
+        set: { "cl-text": CL_PLACEHOLDERS } },
+      { name: "Numbering &amp; date issues", note: "A duplicate section number with a gap, a cross-reference to an <code>Article IV</code> that doesn't exist, an impossible date (Feb 30), and an inconsistent party spelling.",
+        set: { "cl-text": CL_NUMBERING } },
+      { name: "Clean NDA (passes)", note: "A well-formed NDA — contract-lint finds nothing and exits 0. The negative case matters as much as the positive.",
+        set: { "cl-text": CL_CLEAN } },
     ],
     draft: [
       { name: "Mutual NDA", note: "Fills five bracketed placeholders ([Party A], [Term], …) in a mutual NDA cover.",
@@ -441,6 +555,19 @@ This Agreement is governed by the laws of [Governing Law].`,
     compare: (d, el) => { el.innerHTML = badge(d.exitCode===0, 'exit '+d.exitCode+' — '+d.meaning) + '<pre class="result">'+esc(d.raw || d.stderr || '')+'</pre>'; },
     "template-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
     "contract-vault": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'ok' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.ok ? JSON.stringify(d.result, null, 2) : (d.stderr || d.raw || ''))+'</pre>'; },
+    "contract-lint": (d, el) => {
+      const r = d.result;
+      if (!r || (d.exitCode !== 0 && d.exitCode !== 1)) {
+        el.innerHTML = badge(false, 'exit '+d.exitCode) + '<pre class="result">'+esc(d.stderr || d.raw || '')+'</pre>'; return;
+      }
+      const s = r.summary || {}; const findings = r.findings || [];
+      const clean = findings.length === 0;
+      const label = clean ? 'clean — no findings (exit 0)'
+        : (s.error||0)+' error(s) · '+(s.warning||0)+' warning(s) — gate '+(d.exitCode===1?'tripped (exit 1)':'open');
+      const body = clean ? 'No internal-consistency defects found. ✓'
+        : findings.map(f => 'line '+(f.line ?? '?')+'  ['+f.severity+'] '+f.rule+'\n    '+(f.message||'')).join('\n\n');
+      el.innerHTML = badge(clean, label) + '<pre class="result">'+esc(body)+'</pre>';
+    },
     "nda-review": (d, el) => { el.innerHTML = badge(d.ok, d.ok ? 'reviewed' : 'exit '+d.exitCode) + '<pre class="result">'+esc(d.report || d.stderr || '')+'</pre>'; },
     sign: (d, el) => {
       const action = $('#s-action') ? $('#s-action').value : 'demo';
@@ -478,9 +605,10 @@ This Agreement is governed by the laws of [Governing Law].`,
     if (cli === 'contract-vault') return { action: $('#cv-action').value, arg: $('#cv-arg').value };
     if (cli === 'nda-review') return { text: $('#n-text').value };
     if (cli === 'sign') return { action: $('#s-action') ? $('#s-action').value : 'demo' };
+    if (cli === 'contract-lint') return { text: $('#cl-text').value };
     return {};
   }
-  const OUT = { extract:'#e-out', draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out', 'contract-vault':'#cv-out' };
+  const OUT = { extract:'#e-out', draft:'#d-out', compare:'#c-out', 'template-vault':'#v-out', 'nda-review':'#n-out', sign:'#s-out', 'contract-vault':'#cv-out', 'contract-lint':'#cl-out' };
   for (const cli of Object.keys(OUT)) {
     const btn = document.querySelector('button.run[data-cli="'+cli+'"]'); if (!btn) continue;
     btn.addEventListener('click', (ev) => { ev.target.disabled = true; run(cli, payloadFor(cli), $(OUT[cli]), RENDER[cli]).finally(()=> ev.target.disabled = false); });

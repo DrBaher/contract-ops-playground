@@ -2,10 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PLAYGROUNDS, HttpError } from "../src/clis.mjs";
 
-test("eight playgrounds are registered", () => {
+test("nine playgrounds are registered", () => {
   assert.deepEqual(
     Object.keys(PLAYGROUNDS).sort(),
-    ["compare", "contract-vault", "docx2pdf", "draft", "extract", "nda-review", "sign", "template-vault"],
+    ["compare", "contract-lint", "contract-vault", "docx2pdf", "draft", "extract", "nda-review", "sign", "template-vault"],
   );
 });
 
@@ -145,4 +145,27 @@ test("sign shape: surfaces audit result + base64 PDF", () => {
   assert.equal(s.ok, true);
   assert.equal(s.result.auditChainValid, true);
   assert.ok(s.pdfBase64.length > 0);
+});
+
+test("contract-lint build: pasted text → lint contract.md --json (no network flags)", () => {
+  const b = PLAYGROUNDS["contract-lint"].build({ text: "# MSA\n\n[Party] shall pay." });
+  assert.ok(b.argv.includes("lint") && b.argv.includes("contract.md") && b.argv.includes("--json"));
+  assert.equal(b.files["contract.md"], "# MSA\n\n[Party] shall pay.");
+});
+
+test("contract-lint build: empty text tolerated (no crash)", () => {
+  const b = PLAYGROUNDS["contract-lint"].build({});
+  assert.equal(b.files["contract.md"], "");
+});
+
+test("contract-lint shape: exit 0 clean = ok; exit 1 findings = ok + gateTripped; exit 2 = error", () => {
+  const clean = PLAYGROUNDS["contract-lint"].shape({ exitCode: 0, stdout: '{"summary":{"total":0},"findings":[]}', stderr: "", timedOut: false });
+  assert.equal(clean.ok, true);
+  assert.equal(clean.gateTripped, false);
+  const found = PLAYGROUNDS["contract-lint"].shape({ exitCode: 1, stdout: '{"summary":{"error":1},"findings":[{"rule":"placeholder"}]}', stderr: "", timedOut: false });
+  assert.equal(found.ok, true);
+  assert.equal(found.gateTripped, true);
+  assert.equal(found.result.summary.error, 1);
+  const bad = PLAYGROUNDS["contract-lint"].shape({ exitCode: 2, stdout: "", stderr: "bad usage", timedOut: false });
+  assert.equal(bad.ok, false);
 });

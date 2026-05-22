@@ -1,5 +1,5 @@
 # Playground image: the suite CLIs the playgrounds shell out to, plus the server.
-#   Node CLIs: draft, compare, docx2pdf, sign   |   Python: extract, template-vault, nda-review, contract-vault
+#   Node CLIs: draft, compare, docx2pdf, sign   |   Python: extract, template-vault, nda-review, contract-vault, contract-lint
 #   docx2pdf needs a PDF backend → LibreOffice (headless).
 #   sign uses node:sqlite → Node 22+ required.
 # NOTE: this image is large because of LibreOffice. For docx2pdf you can instead
@@ -20,9 +20,9 @@ ENV GIT_AUTHOR_NAME=playground GIT_AUTHOR_EMAIL=playground@local \
 RUN npm i -g @drbaher/draft-cli@latest compare-cli@latest docx2pdf-cli@latest @drbaher/sign-cli@latest \
   && npm cache clean --force
 
-# Python CLIs (extract front door + template-vault + nda-review + contract-vault).
+# Python CLIs (extract front door + template-vault + nda-review + contract-vault + contract-lint).
 ENV PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin
-RUN pipx install extract-cli && pipx install template-vault-cli && pipx install nda-review-cli && pipx install contract-vault
+RUN pipx install extract-cli && pipx install template-vault-cli && pipx install nda-review-cli && pipx install contract-vault && pipx install contract-lint
 
 WORKDIR /app
 COPY package.json ./
