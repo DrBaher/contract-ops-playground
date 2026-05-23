@@ -56,19 +56,19 @@
   </header>
 
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-cli="extract" aria-selected="false">extract</button>
-    <button class="tab" role="tab" data-cli="draft" aria-selected="true">draft</button>
+    <button class="tab" role="tab" data-cli="extract" aria-selected="true">extract</button>
+    <button class="tab" role="tab" data-cli="template-vault" aria-selected="false">template-vault</button>
+    <button class="tab" role="tab" data-cli="draft" aria-selected="false">draft</button>
+    <button class="tab" role="tab" data-cli="nda-review" aria-selected="false">nda-review</button>
+    <button class="tab" role="tab" data-cli="contract-lint" aria-selected="false">contract-lint</button>
     <button class="tab" role="tab" data-cli="compare" aria-selected="false">compare</button>
     <button class="tab" role="tab" data-cli="docx2pdf" aria-selected="false">docx2pdf</button>
-    <button class="tab" role="tab" data-cli="template-vault" aria-selected="false">template-vault</button>
-    <button class="tab" role="tab" data-cli="nda-review" aria-selected="false">nda-review</button>
     <button class="tab" role="tab" data-cli="sign" aria-selected="false">sign</button>
     <button class="tab" role="tab" data-cli="contract-vault" aria-selected="false">contract-vault</button>
-    <button class="tab" role="tab" data-cli="contract-lint" aria-selected="false">contract-lint</button>
     <button class="tab pipe" role="tab" data-cli="pipeline" aria-selected="false">▸ full pipeline</button>
   </div>
 
-  <section class="panel" data-cli="extract">
+  <section class="panel" data-cli="extract" data-active>
     <p class="hint">Turn any contract into structured JSON. Runs <code>extract contract.md --json</code> (deterministic tier, no network). Every field carries a <b>confidence</b> + <b>source</b> — verify, don't trust.</p>
     <div class="examples" data-for="extract"><b>Examples</b></div>
     <div class="note" data-note="extract"></div>
@@ -84,7 +84,7 @@
     <div class="out" id="e-out"></div>
   </section>
 
-  <section class="panel" data-cli="draft" data-active>
+  <section class="panel" data-cli="draft">
     <p class="hint">Fill placeholders in a contract template with your own values. Runs <code>draft --no-llm</code> in a sandbox.</p>
     <div class="examples" data-for="draft"><b>Examples</b></div>
     <div class="note" data-note="draft"></div>
@@ -663,9 +663,10 @@ This Agreement is governed by the laws of [Governing Law].`,
     { cli:'template-vault', n:1, title:'Store & version', cmd:'template-vault info nda/house --json', why:'Pull the versioned house NDA template from the vault.', payload:{ action:'info', arg:'nda/house' } },
     { cli:'draft', n:2, title:'Draft', cmd:'draft mutual-nda.md --params deal.json', why:'Fill the policy-compliant template with the Acme ↔ Vendor deal terms.', payload:{ template: NDA_MUTUAL, params: '{"party_a":"Acme Corp","party_b":"Vendor LLC","effective_date":"June 1, 2026","governing_law":"the State of Delaware"}' } },
     { cli:'nda-review', n:3, title:'Review', cmd:'nda-review-cli review --file nda.md --playbook house.json --why', why:'Score the drafted NDA against the house policy book — it conforms (no high-severity findings).', payload:{ text: NDA_BALANCED } },
-    { cli:'compare', n:4, title:'Drift gate', cmd:'compare agreed.md ready-to-sign.md --json', why:'Catch any change between what was agreed and what came back to sign.', payload:{ base:'## Term and Survival\n\nThis agreement terminates two (2) years after the Effective Date.', candidate:'## Term and Survival\n\nThis agreement terminates three (3) years after the Effective Date.' } },
-    { cli:'docx2pdf', n:5, title:'Render', cmd:'docx2pdf agreed.docx agreed.pdf', why:'Convert the agreed document to a PDF for signing.', sample:true },
-    { cli:'sign', n:6, title:'Sign', cmd:'sign document agreed.pdf --signer "Alice" --auto-place first', why:'Seal it offline with a verifiable PAdES signature + audit chain.', payload:{} },
+    { cli:'contract-lint', n:4, title:'Lint gate', cmd:'contract-lint ready-to-sign.md --check --fail-on error', why:'One of two parallel pre-signature gates: lint the document for internal-consistency defects (leftover placeholders, broken cross-references, numbering, defined-term issues). contract-lint gates defects WITHIN one document; compare gates drift BETWEEN versions.', payload:{ text: NDA_BALANCED } },
+    { cli:'compare', n:5, title:'Drift gate', cmd:'compare agreed.md ready-to-sign.md --json', why:'The other gate: catch any change between what was agreed and what came back to sign.', payload:{ base:'## Term and Survival\n\nThis agreement terminates two (2) years after the Effective Date.', candidate:'## Term and Survival\n\nThis agreement terminates three (3) years after the Effective Date.' } },
+    { cli:'docx2pdf', n:6, title:'Render', cmd:'docx2pdf agreed.docx agreed.pdf', why:'Convert the agreed document to a PDF for signing.', sample:true },
+    { cli:'sign', n:7, title:'Sign', cmd:'sign document agreed.pdf --signer "Alice" --auto-place first', why:'Seal it offline with a verifiable PAdES signature + audit chain.', payload:{} },
   ];
   const pipeHost = $('#pipe-steps');
   PIPELINE.forEach((s, idx) => {
